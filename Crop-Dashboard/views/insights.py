@@ -33,8 +33,9 @@ def crop_recommendation_sys():
         prediction = rec_model.predict(x)
         st.success(prediction)
 
-with open('backend/best_model.pkl', 'rb') as f:
-    yield_model = pickle.load(f)
+# with open('backend/best_model.pkl', 'rb') as f:
+#     yield_model = pickle.load(f)
+yield_model = joblib.load('backend/best_model.pkl')
 scaler = joblib.load('backend/scaler.pkl')
 
 unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
@@ -83,7 +84,7 @@ with col1:
     st.subheader("Crop Recommendation Tool")
     st.divider()
     st.write("Discover the best crops to grow based on your soil data. Our machine learning algorithm will analyze your specific conditions to provide optimal crop recommendations.")
-    if st.button("Get Reccommedation"):
+    if st.button("Get Recommendation"):
         crop_recommendation_sys()
 
 with col2: 
@@ -92,7 +93,7 @@ with col2:
     st.divider()
     st.write("Accurately forecast your crop yields with machine learning that leverages historical datasets. Optimize your planning and maximize productivity.")
     if st.button("Calculate Yield"):
-        pass
+        crop_yield_prediction()
 
 with col3: 
     st.image('assets/info.png')
