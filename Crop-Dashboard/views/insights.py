@@ -49,7 +49,7 @@ with col2:
     st.image('assets/yield.png')
     st.subheader("Crop Yield Predictor")
     st.divider()
-    st.write("Accurately forecast your crop yields with machine learning that leverages historical. Optimize your planning and maximize productivity.")
+    st.write("Accurately forecast your crop yields with machine learning that leverages historical datasets. Optimize your planning and maximize productivity.")
     if st.button("Calculate Yield"):
         pass
 
