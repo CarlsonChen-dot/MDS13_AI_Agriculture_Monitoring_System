@@ -1,5 +1,7 @@
 import streamlit as st
 import pickle
+import pandas as pd
+import joblib
 
 # --FUNCTIONS --
 # Load the model from the .pkl file
@@ -30,6 +32,45 @@ def crop_recommendation_sys():
         x = [[n, p, k, temp, humi, ph]]  # Replace this with actual data
         prediction = rec_model.predict(x)
         st.success(prediction)
+
+with open('backend/best_model.pkl', 'rb') as f:
+    yield_model = pickle.load(f)
+scaler = joblib.load('backend/scaler.pkl')
+
+unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
+                    'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 
+                    'Gram', 'Groundnut', 'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 
+                    'Masoor', 'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion', 
+                    'Other Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)', 
+                    'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum', 
+                    'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato', 
+                    'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+
+# Function to preprocess the data to include crop name columns
+def preprocess_data(df, crop_name, unique_crops):
+    for crop in unique_crops:
+        if f'{crop}' not in df.columns:
+            df[f'{crop}'] = 0
+    
+    # Set the relevant crop column to 1
+    df[f'{crop_name}'] = 1
+    return df 
+
+# YIELD PREDICTION
+@st.dialog("Get Crop Yield Prediction")
+def crop_yield_prediction():
+    st.title("Crop Yield Prediction System")
+
+    file = st.file_uploader("Upload dataset (CSV)", type=["csv"], accept_multiple_files=False)
+    st.caption("or")
+    with st.form("rec_form"):
+        crop_name = st.selectbox("Select Crop", unique_crops)  # Let user select crop
+        n = st.number_input('Nitrogen (mg/L)')
+        p = st.number_input('Phosphorus (mg/L)')
+        k = st.number_input('Potassium (mg/L)')
+        temp = st.number_input('Temperature (°C)')
+        humi = st.number_input('Humidity (%)')
+        submit = st.form_submit_button('Submit Parameters')
 
 
 # -- INSIGHTS PAGE --
