@@ -100,7 +100,6 @@ def crop_yield_prediction():
 
         uploaded_df['Predicted_Yield'] = predictions
         st.write(uploaded_df[['temperature', 'humidity', 'N', 'P', 'K', 'Predicted_Yield']])
-        st.success(predictions)
 
     if submit:
         input_data = pd.DataFrame([[temp, humi, n, p, k]], columns=['temperature', 'humidity', 'N', 'P', 'K'])
