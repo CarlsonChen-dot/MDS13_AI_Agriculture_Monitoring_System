@@ -42,7 +42,7 @@ unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Corian
                     'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 
                     'Gram', 'Groundnut', 'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 
                     'Masoor', 'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion', 
-                    'Other Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)', 
+                    'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)', 
                     'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum', 
                     'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato', 
                     'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
@@ -73,6 +73,57 @@ def crop_yield_prediction():
         humi = st.number_input('Humidity (%)')
         submit = st.form_submit_button('Submit Parameters')
 
+    if file is not None:
+        uploaded_df = pd.read_csv(file)
+        st.write("Processing uploaded dataset...")
+
+        # Preprocess the data
+        uploaded_df = preprocess_data(uploaded_df, crop_name, unique_crops)
+
+        features_order = ['temperature', 'humidity', 'N', 'P', 'K', 'Arhar/Tur', 'Bajra',
+                          'Banana', 'Barley', 'Castor seed', 'Coriander', 'Cotton(lint)',
+                          'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 'Gram', 'Groundnut',
+                          'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 'Masoor',
+                          'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion',
+                          'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)',
+                          'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum',
+                          'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato',
+                          'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+
+        uploaded_df = uploaded_df[features_order]
+
+        # Scale the data
+        uploaded_df_scaled = scaler.transform(uploaded_df)
+
+        # Make the prediction
+        predictions = yield_model.predict(uploaded_df_scaled)
+
+        uploaded_df['Predicted_Yield'] = predictions
+        st.write(uploaded_df[['temperature', 'humidity', 'N', 'P', 'K', 'Predicted_Yield']])
+        st.success(predictions)
+
+    if submit:
+        input_data = pd.DataFrame([[temp, humi, n, p, k]], columns=['temperature', 'humidity', 'N', 'P', 'K'])
+        input_data = preprocess_data(input_data, crop_name, unique_crops)
+
+        features_order = ['temperature', 'humidity', 'N', 'P', 'K', 'Arhar/Tur', 'Bajra',
+                          'Banana', 'Barley', 'Castor seed', 'Coriander', 'Cotton(lint)',
+                          'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 'Gram', 'Groundnut',
+                          'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 'Masoor',
+                          'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion',
+                          'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)',
+                          'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum',
+                          'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato',
+                          'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+        input_data = input_data[features_order]
+
+        # Scale the data
+        input_data_scaled = scaler.transform(input_data)
+
+        # Make the prediction
+        prediction = yield_model.predict(input_data_scaled)
+
+        st.success(f"Predicted Yield: {prediction[0]}")
 
 # -- INSIGHTS PAGE --
 st.title("Crop Insights")
