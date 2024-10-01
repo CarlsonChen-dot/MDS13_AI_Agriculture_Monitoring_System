@@ -33,10 +33,11 @@ def crop_recommendation_sys():
 
 
 # -- INSIGHTS PAGE --
+
 st.title("Crop Insights")
 st.write("Get insights on your soil data now using the following features")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3, gap='medium')
 with col1: 
     st.image('assets/rec.jpg')
     st.subheader("Crop Recommendation Tool")

@@ -1,7 +1,7 @@
 import streamlit as st
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
 import numpy as np
 
 with open('style.css') as f:
@@ -24,17 +24,12 @@ def display_metrics(filtered_df, metric_placeholder):
     avg_humi = round(filtered_df['Humi'].mean())
 
     with metric_placeholder:
-        met1, met2, met3, met4, met5 = st.columns(5)
-        with met1.container():
-            st.markdown(f'<p class="n_text metrics">Nitrogen (N)<br></p><p class="avg">{avg_n} mg/L</p>', unsafe_allow_html = True)
-        with met2.container():
-            st.markdown(f'<p class="p_text metrics">Phosphorus (P)<br></p><p class="avg">{avg_p} mg/L</p>', unsafe_allow_html = True)
-        with met3.container():
-            st.markdown(f'<p class="k_text metrics">Potassium (K)<br></p><p class="avg">{avg_k} mg/L</p>', unsafe_allow_html = True)
-        with met4.container():
-            st.markdown(f'<p class="temp_text metrics">Temperature <br></p><p class="avg">{avg_temp} °C</p>', unsafe_allow_html = True)
-        with met5.container():
-            st.markdown(f'<p class="humi_text metrics">Humidity <br></p><p class="avg">{avg_humi} %</p>', unsafe_allow_html = True)
+        met1, met2, met3, met4, met5 = st.columns((1, 1, 1, 1.5, 1.5))
+        met1.metric("Nutrient N", f"{avg_n} mg/L")
+        met2.metric("Nutrient P", f"{avg_p} mg/L")
+        met3.metric("Nutrient K", f"{avg_k} mg/L")
+        met4.metric("Temperature", f"{avg_temp}°C")
+        met5.metric("Humidity", f"{avg_humi}%")
 
 def filter(df):
     """Creates a filter for the visualisations. Visualisations and metrics change according to the filters"""
@@ -42,23 +37,22 @@ def filter(df):
     min_date = df['datetime'].min().date()
     max_date = df['datetime'].max().date()
 
-    st.markdown(f'<p class="params_text">Chart Data Parameters', unsafe_allow_html = True)
-    st.divider()
-
     # Filter options
-    selected_feature = st.selectbox(
-        "Features",
+    st.write("#")
+    selected_param = st.selectbox(
+        "Parameters",
         ("NPK", "Temperature", "Humidity")
     )
     start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
     end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
+    st.write("total number of data:\n100")
     
     # Get filtered data based on selected parameters
     filtered_df = df[(df['datetime'] >= pd.to_datetime(start_date)) & (df['datetime'] <= pd.to_datetime(end_date))]
 
-    return filtered_df, selected_feature
+    return filtered_df, selected_param
 
-def display_timegraph(filtered_df, selected_feature):
+def display_timegraph(filtered_df, selected_param):
     """ Display the time series graph of the selected parameter against time """
 
     param_map = {
@@ -68,8 +62,8 @@ def display_timegraph(filtered_df, selected_feature):
     }
 
     # Time series graph
-    param = param_map[selected_feature]
-    time_fig = px.line(filtered_df, x='datetime', y=param, title=f'Soil {selected_feature} Levels Over Time', line_shape="spline")
+    param = param_map[selected_param]
+    time_fig = px.line(filtered_df, x='datetime', y=param, title=f'{selected_param} Levels Over Time', line_shape="spline")
     time_fig.update_xaxes(
         showgrid=True,
         gridcolor= 'white',
@@ -105,7 +99,7 @@ def display_timegraph(filtered_df, selected_feature):
     )
     st.plotly_chart(time_fig)
 
-# -- DASHBOARD PAGE --
+# -- DASHBOARD PAGE -- 
 # Reducing whitespace on the top of the page
 st.markdown("""
 <style>
@@ -120,58 +114,27 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+st.subheader("Soil Analytics Dashboard")
+st.write("")
+
+
+
 # Load and transform data
 df = transform_data('views/out_sensor.csv')
 
-# Dashboard row 1
-r1cols = st.columns([1,0.2,5])
-with r1cols[0]:
-    st.markdown('<p class="dashboard_title"><span class="dashboard_subtitle">Soil Analytics<br></span> Dashboard</p>', unsafe_allow_html = True)
-with r1cols[2]:
-    metric_placeholder = st.empty()
-
-# Dashboard row 2
-r2cols = st.beta_columns((4,1.3), gap= "medium")
-with r2cols[1]:
-    filtered_df, selected_feature = filter(df)
-    st.write(len(filtered_df))
-
-with r2cols[1]:
+metric_placeholder = st.empty()
+col1, col2 = st.columns((4,1), gap= "medium")
+with col2:
+    filtered_df, selected_param = filter(df)
     # NPK proportions donut chart
     npk_sums = filtered_df[['N', 'P', 'K']].sum()
-    donut_fig = go.Figure(data=[go.Pie(labels=['N', 'P', 'K'], values=npk_sums, hole=.3)])
-    donut_fig.update_layout(title_text="Soil Nutrient Composition")
-    st.plotly_chart(donut_fig)
+    donut_fig = go.Figure(data=[go.Pie(labels=['N', 'P', 'K'], values=npk_sums, hole=.3)]) 
+    col2.plotly_chart(donut_fig)
 
 display_metrics(filtered_df, metric_placeholder)
-with r2cols[0]:
-    display_timegraph(filtered_df, selected_feature)
+with col1:
+    display_timegraph(filtered_df, selected_param)
     st.code("descriptive stats", language="python")
 
-#st.write(filtered_df)
 
-import streamlit as st
 
-# Custom CSS to add borders to each row in col2
-st.markdown("""
-    <style>
-    .custom-row {
-        border: 2px solid #4CAF50;  /* Green border */
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# Create a row with two columns
-col1, col2 = st.columns(2)
-
-# Left column (col1) - One row
-with col1:
-    st.write("This is the left column with one row")
-
-# Right column (col2) - Two rows with CSS borders
-with col2:
-    st.markdown('<div class="custom-row">This is the top row of the right column</div>', unsafe_allow_html=True)
-    st.markdown('<div class="custom-row">This is the bottom row of the right column</div>', unsafe_allow_html=True)

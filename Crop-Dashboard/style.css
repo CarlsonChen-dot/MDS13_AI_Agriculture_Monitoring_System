@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* DASHBOARD PADDING */
+div.block-container.css-z5fcl4.egzxvld4 {
+    width: 100%;
+    min-width: auto;
+    max-width: initial;
+    padding-left: 5rem;
+    padding-right: 5rem;
+    padding-top: 15px;
+    padding-bottom: 40px;
+}
+
+/* CONTAINER CSS */
+
+div.st-emotion-cache-j5r0tf.e1f1d6gn3{
+    border-radius: 10px;
+    padding-left: 25px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    box-shadow: -6px 8px 20px 1px #00000052;
+}
+
+/* CUSTOM MARKDOWN CLASSES */
+.dashboard_title {
+    font-size: 35px; 
+    font-weight: 700;
+    line-height: 1;
+    text-align: left;
+    padding-bottom: 35px;
+}
+
+.dashboard_subtitle {
+    font-size: 25px; 
+    font-weight: 700;
+    line-height: 1;
+    text-align: left;
+    padding-bottom: 35px;
+}
+
+.avg {
+    font-size: 23px; 
+    color: #37474f;
+    font-weight: 900;
+    text-align: left;
+    line-height: 1;
+    padding-bottom: 10px;
+}
+
+.metrics {
+    font-size: 15px; 
+    font-weight: bold;
+    text-align: left;
+    line-height: 0.2;
+    padding-top: 10px;
+    color: #81c784;
+}
+
+/* Chart data parameters */
+/* div.element-container.st-emotion-cache-11hh7e5.e1f1d6gn4{
+    border-radius: 10px;
+    padding: 10px 20px 10px 20px;
+    box-shadow: -6px 8px 20px 1px #00000052;
+} */
+div.st-emotion-cache-kilw7z.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 10px 25px 10px 25px;
+    box-shadow: -6px 8px 20px 1px #00000052;
+}
+/* Line graph */
+div.st-emotion-cache-el1bu4.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 10px 25px 10px 25px;
+    box-shadow: -6px 8px 20px 1px #00000052;
+}
+
+.params_text{
+    font-size: 17px; 
+    font-weight: 700;
+    text-align: center;
+    line-height: 1;
+    padding-top: 40px;
+}
