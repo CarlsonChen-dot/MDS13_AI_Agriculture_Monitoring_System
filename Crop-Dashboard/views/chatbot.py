@@ -1,338 +1,358 @@
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 
+# List of specific columns user may request
+specific_columns = ["N", "P", "K", "Humidity", "date", "Temperature", "EC", "PH", "time"]
+
+z_thresholds = {
+    "Humidity": 4,  # A larger threshold for humidity
+    "Temperature": 4,  # Default threshold for temperature
+    "EC": 5,
+    "PH": 5,
+    "N": 6,
+    "P": 6,
+    "K":6
+}
 
 
-# -- FUNCTIONS --
-def transform_data(file):
-    """ Formats the data to create visualsations """
-    df = pd.read_csv(file)
-    df['datetime'] = df['date'] + ' ' + df['time']
-    df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
-    return df
+st.session_state["page"] = "chatbot_page"
+st.title("Crop Chatbot")
 
-def display_metrics(df):
-    """ Displays metrics (average values) of all parameters"""
-    avg_n = round(df['N'].mean())
-    avg_p = round(df['P'].mean())
-    avg_k = round(df['K'].mean())
-    avg_temp = round(df['Temp'].mean())
-    avg_humi = round(df['Humi'].mean())
+# Add hint questions for user guidance
+st.write("### Ask me anything about your dataset!")
+st.write("Here are some example questions you can ask:")
+st.markdown("""
+    <p style='color: grey;'>
+        - What are the unique values in each column?<br>
+        - How many missing values are in each column?<br>
+        - What is the average Humidity?<br>
+        - Can you summarize the dataset for me?
+        * For column prompt, please use the exact column name.
+    </p>
+""", unsafe_allow_html=True)
 
-    met1, met2, met3, met4, met5 = st.columns((1,1,1,1.5,1.5))
-    met1.metric("Nutrient N", f"{avg_n} mg/L")
-    met2.metric("Nutrient P", f"{avg_p} mg/L")
-    met3.metric("Nutrient K", f"{avg_k} mg/L")
-    met4.metric("Temperature", f"{avg_temp} °F")
-    met5.metric("Humidity", f"{avg_humi}%")
+# Check if the DataFrame exists in session_state
+if 'uploaded_df' in st.session_state:
+    df = st.session_state['uploaded_df']  # Get the uploaded DataFrame
 
-def filter(df):
-    """Creates a filter for the visualisations. Visualisations change according to the filters"""
-    # Get the min and max dates from the dataframe
-    min_date = df['datetime'].min().date()
-    max_date = df['datetime'].max().date()
-
-    # Filter options
-    selected_param = st.selectbox(
-        "Parameters",
-        ("NPK","Temperature","Humidity")
-    )
-    start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
-    end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
-
-    # Get filtered data based on selected parameters
-    filtered_df = df[(df['datetime'] >= pd.to_datetime(start_date)) & (df['datetime'] <= pd.to_datetime(end_date))]
-
-    return filtered_df, selected_param
-
-def display_timegraph(selected_param):
-    """ Display the time series graph of selected parameter against time"""
-
-    param_map = {
-        "NPK":['N','P',"K"],
-        "Temperature" : "Temp",
-        "Humidity": "Humi"
-    }
-
-    # Time series graph
-    param = param_map[selected_param]
-    time_fig = px.line(filtered_df, x='datetime', y= param, title=f'{selected_param} Levels Over Time', line_shape= "spline")
-    time_fig.update_xaxes(
-        rangeslider_visible=True,
-        rangeslider=dict(
-            visible=True,
-            bgcolor='#97a29a', 
-            thickness=0.1 
-        ),
-        rangeselector=dict(
-            buttons=list([
-                dict(count=1, label="1d", step="day", stepmode="backward"),
-                dict(count=7, label="1w", step="day", stepmode="backward"),
-                dict(count=1, label="1m", step="month", stepmode="backward"),
-                dict(count=6, label="6m", step="month", stepmode="backward"),
-                dict(count=1, label="1y", step="year", stepmode="backward"),
-                dict(step="all")
-            ])
-        )
-    )
-
-    st.plotly_chart(time_fig)
-
-
-
-st.header("Soil Analytics")
-df = transform_data('views/out_sensor.csv')
-filtered_df, selected_param = filter(df)
-display_metrics(filtered_df)
-display_timegraph(selected_param)
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
     
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-#total data
-#additional analytics
-#highest captured values
+    # React to user input
+    if prompt := st.chat_input("What do you want to know about your dataset?"):
+        # Display user message in chat message container
+        st.chat_message("user").markdown(prompt)
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # # NPK proportions donut chart
-    # npk_sums = filtered_df[['N', 'P', 'K']].sum()
-    # donut_fig = go.Figure(data=[go.Pie(labels=['N', 'P', 'K'], values=npk_sums, hole=.3)]) 
-    # col2.plotly_chart(donut_fig)
+        # Generate response based on the prompt
+        response = ""
+        
+        if "summary" in prompt.lower() or "summarize" in prompt.lower() or "summarise" in prompt.lower():
+            # Get the summary statistics, reset index so that "count", "mean", etc., appear as a column
+            summary_stats = df.describe().reset_index()
+            # Convert the summary statistics to markdown format
+            response = summary_stats.to_markdown()
 
+        elif "unique" in prompt.lower():
+            if any(col in prompt for col in specific_columns):
+                response = ""
+                for col in specific_columns:
+                    # Check if the requested column exists in the dataframe
+                    if col in df.columns and col in prompt:
+                        unique_values = df[col].unique()  # Get unique values
+                        num_unique_values = df[col].nunique()  # Get number of unique values
+                        
+                        # Append the unique values and their count for each specific column
+                        response += f"\n'{col}': {num_unique_values} unique values : {', '.join(map(str, unique_values))}\n"
+                    elif col not in df.columns:
+                        response += f"\n'{col}' is not a valid column in the data.\n"
 
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import numpy as np
+            else:
+                # Create a dictionary to store the data for each column
+                unique_data = {
+                    "Column": [],
+                    "Number of Unique Values": [],
+                    "Unique Values": []
+                }
 
-# -- FUNCTIONS --
+                # Loop through each column to collect unique values and their counts
+                for col in df.columns:
+                    unique_values = df[col].unique()  # Get unique values
+                    num_unique_values = df[col].nunique()  # Get number of unique values
+                    
+                    # Append the information to the dictionary
+                    unique_data["Column"].append(col)
+                    unique_data["Number of Unique Values"].append(num_unique_values)
+                    unique_data["Unique Values"].append(", ".join(map(str, unique_values)))  # Convert unique values to a comma-separated string
 
-### view raw data
+                # Convert the dictionary to a DataFrame
+                unique_df = pd.DataFrame(unique_data)
+                
+                # Display the DataFrame as a table in markdown format
+                response = unique_df.to_markdown()
 
-def filter_data(file):
-    df = pd.read_csv(file)
-    df['datetime'] = df['date'] + ' ' + df['time']
-    df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
-    return df
+        elif "missing" in prompt.lower():
+            if any(col in prompt for col in specific_columns):
+                response = ""
+                for col in specific_columns:
+                    # Check if the requested column exists in the dataframe
+                    if col in df.columns and col in prompt:
+                        # Calculate the missing values for the specific column
+                        missing_count = df[col].isna().sum()
 
-def avg(df,param):
-    return df[param].mean()
+                        # Append the missing values count for the column
+                        response += f"\n'{col}': {missing_count} missing values\n"
+                    elif col not in df.columns:
+                        response += f"\n'{col}' is not a valid column in the data.\n"
+            else:
+                # Calculate missing values for each column
+                missing_info = df.isna().sum()
 
-# range date function
-df = filter_data('views/out_sensor.csv')
+                # Create a DataFrame to format it nicely
+                missing_df = pd.DataFrame({
+                    "Column": missing_info.index,
+                    "Missing Values": missing_info.values
+                })
 
-# -- DASHBOARD PAGE -- 
-st.header("Soil Analytics")
+                # Convert the DataFrame to markdown format
+                response = missing_df.to_markdown(index=False)
 
-# Metrics
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Nitrogen (N)", "70 mg/L", "1.2 °F")
-col2.metric("Phosporus (P)", "9 mg/L", "-8%")
-col3.metric("Potassium (K)", "86 mg/L", "1.3")
+        elif "average" in prompt.lower() or "mean" in prompt.lower():
+            if any(col in prompt for col in specific_columns):
+                response = ""
+                for col in specific_columns:
+                    # Check if the requested column exists in the dataframe
+                    if col in df.columns and col in prompt:
+                        # Check if the column is numeric before calculating the average
+                        if pd.api.types.is_numeric_dtype(df[col]):
+                            avg_value = df[col].mean().round(2)  # Calculate average for the specific column
+                            response += f"\n{col} average: {avg_value} \n"
+                        else:
+                            response += f"\n'{col}' is not a numeric column and cannot have an average.\n"
+                    elif col not in df.columns:
+                        response += f"\n'{col}' is not a valid column in the data.\n"
+            else:
+                # Calculate the average for each numeric column
+                average_values = df.select_dtypes(include=[np.number]).mean().round(2)
 
-# Plot NPK
-col1, col2 = st.columns([3,1])
+                # Create a DataFrame to display the averages
+                average_df = pd.DataFrame({
+                    "Column": average_values.index,
+                    "Average": average_values.values
+                })
 
-# Time series vs NPK
-time_fig = px.line(df, x='datetime', y='Humi', title='Nutrient levels')
-time_fig.update_xaxes(
-    rangeslider_visible=True,
-    rangeslider=dict(
-        visible=True,
-        bgcolor='#97a29a', 
-        thickness=0.05 
-    ),
-    rangeselector=dict(
-        buttons=list([
-            dict(count=1, label="1d", step="day", stepmode="backward"),
-            dict(count=7, label="1w", step="day", stepmode="backward"),
-            dict(count=1, label="1m", step="month", stepmode="backward"),
-            dict(count=6, label="6m", step="month", stepmode="backward"),
-            dict(count=1, label="YTD", step="year", stepmode="todate"),
-            dict(count=1, label="1y", step="year", stepmode="backward"),
-            dict(step="all")
-        ])
-    )
-)
-col1.plotly_chart(time_fig)
+                # Convert the DataFrame to markdown format
+                response = average_df.to_markdown(index=False)
 
-# Donut chart showing NPK percentage
-labels = ['Nitrogen', 'Phosphorus', 'Potassium']
-values = [40, 30, 30]
-donut_fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.5)])
-donut_fig .update_traces(marker=dict(colors=['#ff9999', '#66b3ff', '#99ff99']),
-                  hoverinfo='label+percent', textinfo='value')
-col2.plotly_chart(donut_fig)
+        elif "median" in prompt.lower() or "best value" in prompt.lower():
+            if any(col in prompt for col in specific_columns):
+                response = ""
+                for col in specific_columns:
+                    # Check if the requested column exists in the dataframe
+                    if col in df.columns and col in prompt:
+                        # Check if the column is numeric before calculating the median
+                        if pd.api.types.is_numeric_dtype(df[col]):
+                            median_value = df[col].median().round(2)  # Calculate median for the specific column
+                            response += f"\n{col}: {median_value} \n"
+                        else:
+                            response += f"\n'{col}' is not a numeric column and cannot have a {prompt.lower()}.\n"
+                    elif col not in df.columns:
+                        response += f"\n'{col}' is not a valid column in the data.\n"
+            else:
+                # Calculate the median for each numeric column
+                median_values = df.select_dtypes(include=[np.number]).median().round(2)
 
+                # Create a DataFrame to display the medians
+                median_df = pd.DataFrame({
+                    "COLUMN": median_values.index,
+                    prompt.upper(): median_values.values
+                })
 
-# Plot area data that switch between temp, humidity, ph and ec
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-st.area_chart(chart_data)
+                # Convert the DataFrame to markdown format
+                response = median_df.to_markdown(index=False)
 
-
-# Example pH value
-ph_value = 6.8
-
-# Create a gauge chart using Plotly
-fig = go.Figure(go.Indicator(
-    mode="gauge+number",
-    value=ph_value,
-    title={'text': "Soil pH Level"},
-    gauge={'axis': {'range': [0, 14]},
-           'steps': [
-               {'range': [0, 3], 'color': "#ff6666"},
-               {'range': [3, 6], 'color': "#ffcc66"},
-               {'range': [6, 8], 'color': "#99ff99"},
-               {'range': [8, 11], 'color': "#66b3ff"},
-               {'range': [11, 14], 'color': "#cc99ff"}],
-           'bar': {'color': "#000000"}}))
-
-# Customize chart appearance (optional)
-fig.update_layout(height=400)
-
-# Display the gauge chart in Streamlit
-st.plotly_chart(fig)
-
-
-
-#### !!!!!! DUMP ####
-
-st.title("Analytics Demo")
-
-# metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Nitrogen", "70 mg/L", "1.2 °F")
-col2.metric("Phosporus", "9 mg/L", "-8%")
-col3.metric("Humidity", "86 mg/L", "1.3")
-
-st.write("\n")
-col1, col2 = st.columns([3, 1])
-
-col1.subheader("Nutrient Levels")
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-col1.line_chart(chart_data)
-
-df = px.data.tips()
-fig = px.pie(df, values='tip', names='day', color_discrete_sequence=px.colors.sequential.RdBu)
-col2.plotly_chart(fig)
-
-st.write("\n")
-col1.subheader("Other Levels")
-col3, col4, col5= st.columns([3,1,1])
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-col3.area_chart(chart_data)
-col4.metric("Humidity", "86 mg/L", "1.3")
-col4.metric("Humidity", "86 mg/L", "1.3")
-
-import plotly.graph_objects as go
-
-fig3 = go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = 270,
-    domain = {'x': [0, 1], 'y': [0, 1]},
-    title = {'text': "Speed"}))
-col5.plotly_chart(fig3)
-
-# Data columns
-df = pd.read_csv('backend/out_sensor.csv')
-df['datetime'] = df['date'] + ' ' + df['time']
-df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
-
-# Create the Plotly figure
-fig = px.line(df, x='datetime', y=['N', 'P', 'K'], title='Nutrient levels')
-
-# Update x-axes with range slider and selectors
-fig.update_xaxes(
-    rangeslider_visible=True,
-    rangeslider=dict(
-        visible=True,
-        bgcolor='#97a29a', 
-        thickness=0.05 
-    ),
-    rangeselector=dict(
-        buttons=list([
-            dict(count=1, label="1d", step="day", stepmode="backward"),
-            dict(count=7, label="1w", step="day", stepmode="backward"),
-            dict(count=1, label="1m", step="month", stepmode="backward"),
-            dict(count=6, label="6m", step="month", stepmode="backward"),
-            dict(count=1, label="YTD", step="year", stepmode="todate"),
-            dict(count=1, label="1y", step="year", stepmode="backward"),
-            dict(step="all")
-        ])
-    )
-)
-
-st.plotly_chart(fig)
+        elif "mode" in prompt.lower() or "most frequent" in prompt.lower():
+            if any(col in prompt for col in specific_columns):
+                response = ""
+                for col in specific_columns:
+                    # Check if the requested column exists in the dataframe
+                    if col in df.columns and col in prompt:
+                        # Calculate the mode for the specific column
+                        mode_values = df[col].mode()
+                        if not mode_values.empty:
+                            # Join the mode values (if more than one) and round them if they are numeric
+                            mode_str = ", ".join(map(str, mode_values.round(2) if pd.api.types.is_numeric_dtype(mode_values) else mode_values))
+                            response += f"\n'{col}' mode(s): {mode_str}\n"
+                        else:
+                            response += f"\n'{col}' has no mode (empty column).\n"
+                    elif col not in df.columns:
+                        response += f"\n'{col}' is not a valid column in the data.\n"
+            else:
+                # Calculate the mode for each column in the dataset
+                response = ""
+                for col in df.columns:
+                    mode_values = df[col].mode()
+                    if not mode_values.empty:
+                        # Join the mode values (if more than one) and round them if they are numeric
+                        mode_str = ", ".join(map(str, mode_values.round(2) if pd.api.types.is_numeric_dtype(mode_values) else mode_values))
+                        response += f"\n'{col}' mode(s): {mode_str} \n"
+                    else:
+                        response += f"\n'{col}' has no mode (empty column).\n"
 
 
-fig2 = px.area(df, x="datetime", y="Temp")
-fig3 = px.area(df, x="datetime", y="Humi")
-fig4 = px.area(df, x="datetime", y="PH")
+        elif "anomalies" in prompt.lower():
+            # Create a DataFrame to hold anomalies data
+            anomalies_data = []
+
+            # Check if a specific column is mentioned in the prompt
+            specified_columns = []
+            for col in df.columns:
+                if col in prompt:
+                    specified_columns.append(col)
+
+            # If specific columns are specified, analyze only those columns
+            if specified_columns:
+                for col in specified_columns:
+                    if pd.api.types.is_numeric_dtype(df[col]):
+                        # Check for specific Z-score threshold
+                        threshold = z_thresholds.get(col, 3.0)  # Default to 3.0 if not specified
+
+                        # Calculate the Z-scores for the column
+                        z_scores = stats.zscore(df[col].dropna())  # Drop NaN values before calculating Z-scores
+                        
+                        # Identify anomalies: absolute Z-score greater than threshold
+                        anomalies_mask = abs(z_scores) > threshold
+                        anomalies_values = df[col].dropna()[anomalies_mask]  # Get the actual values that are anomalies
+                        
+                        # Filter out consecutive values that are the same
+                        previous_value = None
+                        filtered_anomalies = []
+                        for idx in anomalies_values.index:
+                            value = anomalies_values[idx]
+                            if value != previous_value:  # Check if the current value is different from the previous one
+                                filtered_anomalies.append(value)
+                            previous_value = value
+                        
+                        num_anomalies = len(filtered_anomalies)
+
+                        if num_anomalies > 0:
+                            response += f"\n'{col}': {num_anomalies} anomalies detected (threshold: {threshold}): {', '.join(map(str, filtered_anomalies))}\n"
+                            anomalies_data.append((col, filtered_anomalies))  # Store column and its anomalies
+                        else:
+                            response += f"\n'{col}': No anomalies detected (threshold: {threshold}).\n"
+                    else:
+                        response += f"\n'{col}': Non-numeric column, anomalies cannot be detected.\n"
+
+            else:
+                # If no specific columns are specified, analyze all relevant columns
+                for col in df.columns:
+                    if pd.api.types.is_numeric_dtype(df[col]):
+                        # Check for specific Z-score threshold
+                        threshold = z_thresholds.get(col, 3.0)  # Default to 3.0 if not specified
+
+                        # Calculate Z-scores for the column
+                        z_scores = stats.zscore(df[col].dropna())  # Drop NaN values before calculating Z-scores
+                        
+                        # Identify anomalies: absolute Z-score greater than threshold
+                        anomalies_mask = abs(z_scores) > threshold
+                        anomalies_values = df[col].dropna()[anomalies_mask]  # Get the actual values that are anomalies
+                        
+                        # Filter out consecutive values that are the same
+                        previous_value = None
+                        filtered_anomalies = []
+                        for idx in anomalies_values.index:
+                            value = anomalies_values[idx]
+                            if value != previous_value:  # Check if the current value is different from the previous one
+                                filtered_anomalies.append(value)
+                            previous_value = value
+                        
+                        num_anomalies = len(filtered_anomalies)
+
+                        if num_anomalies > 0:
+                            response += f"\n'{col}': {num_anomalies} anomalies detected (threshold: {threshold}): {', '.join(map(str, filtered_anomalies))}\n"
+                            anomalies_data.append((col, filtered_anomalies))  # Store column and its anomalies
+                        else:
+                            response += f"\n'{col}': No anomalies detected (threshold: {threshold}).\n"
+                    else:
+                        response += f"\n'{col}': Non-numeric column, anomalies cannot be detected.\n"  
 
 
-fig2.update_yaxes(
-    title = "Temperature",
-    range=[0,40])
+        elif "datatype" in prompt.lower():
+             # Get the data types for each column
+            datatypes = df.dtypes
 
-st.plotly_chart(fig2)
-st.plotly_chart(fig3)
-st.plotly_chart(fig4)
+            # Check if specific columns are mentioned in the prompt
+            specified_columns = [col for col in df.columns if col in prompt]
 
+            if specified_columns:
+                # Filter the datatypes to include only specified columns
+                datatypes = datatypes[specified_columns]
+                
+                # Create a DataFrame to format it nicely
+                datatype_df = pd.DataFrame({
+                    "Column": datatypes.index,
+                    "Data Type": datatypes.values
+                })
+                
+                # Convert the DataFrame to markdown format
+                response = datatype_df.to_markdown(index=False)
+            else:
+                # Create a DataFrame to format it nicely for all columns
+                datatype_df = pd.DataFrame({
+                    "Column": datatypes.index,
+                    "Data Type": datatypes.values
+                })
+                
+                # Convert the DataFrame to markdown format
+                response = datatype_df.to_markdown(index=False)
 
-fig5 = px.scatter(df, x='Temp', y='Humi', title='Temperature vs. Humidity')
-st.plotly_chart(fig5)
+        elif "total number of data" in prompt.lower() or "number of rows" in prompt.lower() or "total rows" in prompt.lower() or "row" in prompt.lower():
+            # Check if df is defined and has data
+            if 'df' in locals() and not df.empty:
+                total_rows = len(df)
+                response = f"The total number of data points (rows) in the dataset is: {total_rows}."
 
-fig6 = px.violin(df, y='Temp', box=True, points='all', title='Temperature Violin Plot')
-st.plotly_chart(fig6)
+        elif "column" in prompt.lower() or "number of columns" in prompt.lower():
+            # Check if df is defined and has data
+            if 'df' in locals() and not df.empty:
+                total_columns = len(df.columns)
+                column_names = ', '.join(df.columns)  # Get the column names
+                response = f"The total number of columns in the dataset is: {total_columns}. The columns are: {column_names}."
+ 
+        
+        elif "hello" in prompt.lower() or "hi" in prompt.lower():
+            response = "Hello! How can I assist you today?"
+            
+        elif "thank you" in prompt.lower():
+            response = "You're welcome! If you have any other questions, feel free to ask."
 
-df_drop = df.drop(['datetime', 'date', 'time'], axis=1)
-fig7 = px.imshow(df_drop)
-st.plotly_chart(fig7)
+        elif "humi" in  prompt.lower():
+            response = "Do you mean Humidity?"
 
+        elif "temp" in  prompt.lower():
+            response = "Do you mean Temperature?"
+        
+        elif "ec" in prompt or "ph" in prompt or "n" in prompt or "k" in prompt or "p" in prompt or "temperature" in prompt or "humidity" in prompt:
+            response = "I'm sorry please be more specific."
 
-fig8 = px.scatter(df, x="Temp", y="Humi")
-fig9 = px.scatter(df, x="Temp", y="PH")
-fig10 = px.scatter(df, x="Temp", y="EC")
-
-fig11 = px.scatter(df, x="Humi", y="PH")
-fig12 = px.scatter(df, x="Humi", y="EC")
-fig13 = px.scatter(df, x="PH", y="EC")
-
-col1, col2 = st.columns([3, 2])
-with col1:
-    st.plotly_chart(fig8)
-    st.plotly_chart(fig9)
-    st.plotly_chart(fig10)
-
-
-with col2:
-    st.plotly_chart(fig11)
-    st.plotly_chart(fig12)
-    st.plotly_chart(fig13)
-
-
-import plotly.express as px
-import pandas as pd
-
-fig = px.line(df, x='datetime', y='N', title='Time Series with Rangeslider')
-
-fig.update_xaxes(rangeslider_visible=True)
-st.plotly_chart(fig)
-
-
-import plotly.express as px
-import streamlit as st
-
-# Sample DataFrame
-df = px.data.stocks()
-
-# Create line plot with range slider
-fig = px.line(df, x='date', y='GOOG', title='Google Stock Prices with Range Slider')
-
-# Add range slider
-fig.update_xaxes(rangeslider_visible=True)
-
-# Display plot in Streamlit
-st.plotly_chart(fig)
+        else:
+        # Handle unrecognized prompts
+            response = "I'm sorry, I didn't understand that. Can you please rephrase your question or ask about something else? "
+            
+        # Display assistant response
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+else:
+    st.write("Please upload a Soil Data (CSV file) to proceed.")

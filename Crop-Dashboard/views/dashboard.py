@@ -39,6 +39,7 @@ def display_metrics(filtered_df, metric_placeholder):
 
 def filter(df):
     """Creates a filter for the visualisations. Visualisations and metrics change according to the filters"""
+    
     # Get the min and max dates from the dataframe
     min_date = df['datetime'].min().date()
     max_date = df['datetime'].max().date()
@@ -68,14 +69,17 @@ def display_timegraph(filtered_df, selected_feature):
 
     # Time series graph
     param = param_map[selected_feature]
-    time_fig = px.line(filtered_df, x='datetime', y=param, title=f'Soil {selected_feature} Levels Over Time', line_shape="spline")
+    time_fig = px.line(
+        filtered_df, x='datetime', 
+        y=param, 
+        title=f'Soil {selected_feature} Levels Over Time', 
+        template="plotly_dark",
+        line_shape="spline")
     time_fig.update_xaxes(
-        showgrid=True,
-        gridcolor= 'white',
         rangeslider_visible=True,
         rangeslider=dict(
             visible=True,
-            bgcolor='#f6f8fc',
+            # bgcolor='#f6f8fc', # range selector color
             thickness=0.1
         ),
         rangeselector=dict(
@@ -89,16 +93,15 @@ def display_timegraph(filtered_df, selected_feature):
             ])
         )
     )
-    time_fig.update_yaxes(showgrid=True,gridcolor= 'white')
 
     # Update layout for figure size, background, and title
     time_fig.update_layout(
         width=1500,  
         height=570, 
         title_font_size=20,  
-        plot_bgcolor='#f6f8fc',   
+        plot_bgcolor='#26282E',   
         font=dict(
-            color="black",  # Customize font color
+            color="#f6f6f6",  # Customize font color
             size=14  # Font size for labels
         )
     )
@@ -119,7 +122,8 @@ def display_donut_chart(df):
     # Create the donut chart using Altair
     chart = alt.Chart(npk_df).mark_arc(innerRadius=30).encode(
         theta=alt.Theta(field="Value", type="quantitative"),
-        color=alt.Color(field="Nutrient", type="nominal")
+        color=alt.Color(field="Nutrient", type="nominal"),
+        
     ).properties(
         width=200,
         height=200  
@@ -148,49 +152,22 @@ def display_scatterplot(df, x):
     
     # Update layout to adjust aesthetics
     fig1.update_layout(
-        xaxis_title=x,   # X-axis title
-        yaxis_title=against_map[x][2],   # Y-axis title
-        width=100,       # Set width
-        height=400       # Set height
+        xaxis_title=x,   
+        yaxis_title=against_map[x][2],  
+        width=100,       
+        height=400      
     )
     fig2.update_layout(
-        xaxis_title=x,   # X-axis title
-        yaxis_title=against_map[x][3],   # Y-axis title
-        width=100,       # Set width
-        height=400       # Set height
+        xaxis_title=x,  
+        yaxis_title=against_map[x][3],   
+        width=100,       
+        height=400       
     )
 
     # Display the scatter plot in Streamlit
     st.plotly_chart(fig1, use_container_width=True)
     st.plotly_chart(fig2, use_container_width=True)
-
-# -- DASHBOARD PAGE --
-st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
-tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
-
-# Load and transform data
-df = transform_data('views/out_sensor.csv')
-
-# -- ANALYTICS TAB --
-with tab1:
-    metric_placeholder = st.empty()
-    r2cols = st.columns((4,1.3), gap= "medium")
-    with r2cols[1]:
-        filtered_df, selected_feature = filter(df)
-        st.divider()
-        display_donut_chart(filtered_df)    
-    display_metrics(filtered_df, metric_placeholder)
-    with r2cols[0]:
-        display_timegraph(filtered_df, selected_feature)
-        st.code("descriptive stats", language="python")
-
-
-# -- DATA OVERVIEW TAB --
-with tab2:
-    st.write(filtered_df)
-
-
-# -- ADVANCED ANALYTICS TAB --
+    
 def display_boxplot(df, selected_feature):
     """ Display a box plot of the selected_feature """
 
@@ -216,27 +193,64 @@ def display_boxplot(df, selected_feature):
     # Display the box plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
+# -- DASHBOARD PAGE --
 
-with tab3:
-    st.caption("Analytics based on selected parameters:")
-    st.success(selected_feature)
-    cols = st.columns(2, gap="medium")
-    with cols[0]:
-        # Distribution of data
-        display_boxplot(filtered_df, selected_feature)
 
-    with cols[1]:
-        # Calculate correlation matrix
-        corr_matrix = filtered_df.drop(columns=['datetime','date','time']).corr()
+st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
+tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
 
-        # Create a heatmap using Plotly
-        fig = px.imshow(corr_matrix, 
-                        text_auto=True, 
-                        aspect="auto", 
-                        color_continuous_scale="Viridis", 
-                        title="Correlation Map of Soil Properties")
 
-        # Display the heatmap in Streamlit
-        st.plotly_chart(fig, use_container_width=True)
+if 'uploaded_df' in st.session_state:
+    df = st.session_state['uploaded_df']  # Get the uploaded DataFrame
+    # Load and transform data
+    df = transform_data('views/out_sensor.csv')
 
-    display_scatterplot(filtered_df, selected_feature)
+    # -- ANALYTICS TAB --
+    with tab1:
+        metric_placeholder = st.empty()
+        r2cols = st.columns((4,1.3), gap= "medium")
+        with r2cols[1]:
+            filtered_df, selected_feature = filter(df)
+            st.divider()
+            display_donut_chart(filtered_df)    
+        display_metrics(filtered_df, metric_placeholder)
+        with r2cols[0]:
+            display_timegraph(filtered_df, selected_feature)
+            st.code("descriptive stats", language="python")
+        st.write("")
+
+
+    # -- DATA OVERVIEW TAB --
+    with tab2:
+        st.write(filtered_df)
+        # !!!!!
+        # insert filter here
+        # insert button to update chart
+
+
+    # -- ADVANCED ANALYTICS TAB --
+    with tab3:
+        st.caption("Analytics based on selected parameters:")
+        st.success(selected_feature)
+        cols = st.columns(2, gap="medium")
+        with cols[0]:
+            # Distribution of data
+            display_boxplot(filtered_df, selected_feature)
+
+        with cols[1]:
+            # Calculate correlation matrix
+            corr_matrix = filtered_df.drop(columns=['datetime','date','time']).corr()
+
+            # Create a heatmap using Plotly
+            fig = px.imshow(corr_matrix, 
+                            text_auto=True, 
+                            aspect="auto", 
+                            color_continuous_scale="Viridis", 
+                            title="Correlation Map of Soil Properties")
+
+            # Display the heatmap in Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+
+        display_scatterplot(filtered_df, selected_feature)
+else:
+    st.write("Please upload a CSV file to proceed.")

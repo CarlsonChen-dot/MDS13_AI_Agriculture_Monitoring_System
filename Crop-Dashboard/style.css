@@ -18,14 +18,14 @@ div.block-container.css-z5fcl4.egzxvld4 {
 }
 
 /* CONTAINER CSS */
-
 div.st-emotion-cache-j5r0tf.e1f1d6gn3{
     border-radius: 10px;
     padding-left: 25px;
     padding-top: 10px;
     padding-bottom: 10px;
-    box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15);
+    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
     /* box-shadow: -6px 8px 20px 1px #00000052; */
+    border: 1px groove #26282E;
 }
 
 /* CUSTOM MARKDOWN CLASSES */
@@ -39,7 +39,7 @@ div.st-emotion-cache-j5r0tf.e1f1d6gn3{
 
 .avg {
     font-size: 20px; 
-    color: #37474f;
+    color:#f6f6f6;
     font-weight: 900;
     text-align: left;
     line-height: 1;
@@ -59,14 +59,17 @@ div.st-emotion-cache-j5r0tf.e1f1d6gn3{
 div.st-emotion-cache-kilw7z.e1f1d6gn3{
     border-radius: 10px;
     padding: 0px 20px 10px 20px;
-    box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15);
+    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
+    
+    border: 1px groove #26282E
 }
 
 /* Line graph */
 div.st-emotion-cache-el1bu4.e1f1d6gn3{
     border-radius: 10px;
     padding: 0px 25px 10px 25px;
-    box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15);
+    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
+    border: 1px groove #26282E;
 } 
 
 .params_text , .donut_chart_title{
@@ -92,7 +95,6 @@ div.st-emotion-cache-el1bu4.e1f1d6gn3{
     line-height: 1;
     padding-top: 0px;
 }
-
 
 
 

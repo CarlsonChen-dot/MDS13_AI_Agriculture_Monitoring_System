@@ -24,14 +24,12 @@ chatbot_page = st.Page(
     icon=":material/smart_toy:"
 )
 
-
-
 # -- NAVIGATION SETUP --
 pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page])
 
 # -- SHARED ON ALL PAGES --
 st.logo("assets/logo.png")
-st.sidebar.text("Made by MSSD13")
+st.sidebar.text("Made by MDS13")
 
 pg.run()
 
