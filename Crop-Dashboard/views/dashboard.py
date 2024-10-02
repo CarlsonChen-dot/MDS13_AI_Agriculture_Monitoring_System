@@ -1,236 +1,256 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import pandas as pd
 import numpy as np
+import altair as alt
+
+with open('style.css') as f:
+    st.markdown(f'<style>{f.read()}<style>', unsafe_allow_html=True)
 
 # -- FUNCTIONS --
-
-### view raw data
-
-def filter_data(file):
+def transform_data(file):
+    """ Formats the data to create visualizations """
     df = pd.read_csv(file)
     df['datetime'] = df['date'] + ' ' + df['time']
     df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
     return df
 
-def avg(df,param):
-    return df[param].mean()
+def display_metrics(filtered_df, metric_placeholder):
+    """ Displays metrics (average values) of all parameters for the filtered data """
+    avg_n = round(filtered_df['N'].mean())
+    avg_p = round(filtered_df['P'].mean())
+    avg_k = round(filtered_df['K'].mean())
+    avg_temp = round(filtered_df['Temp'].mean())
+    avg_humi = round(filtered_df['Humi'].mean())
 
-# range date function
-df = filter_data('views/out_sensor.csv')
+    with metric_placeholder:
+        met1, met2, met3, met4, met5 = st.columns(5)
+        with met1.container():
+            st.markdown(f'<p class="n_text metrics">Nitrogen (N)<br></p><p class="avg">{avg_n} mg/L</p>', unsafe_allow_html = True)
+        with met2.container():
+            st.markdown(f'<p class="p_text metrics">Phosphorus (P)<br></p><p class="avg">{avg_p} mg/L</p>', unsafe_allow_html = True)
+        with met3.container():
+            st.markdown(f'<p class="k_text metrics">Potassium (K)<br></p><p class="avg">{avg_k} mg/L</p>', unsafe_allow_html = True)
+        with met4.container():
+            st.markdown(f'<p class="temp_text metrics">Temperature <br></p><p class="avg">{avg_temp} °C</p>', unsafe_allow_html = True)
+        with met5.container():
+            st.markdown(f'<p class="humi_text metrics">Humidity <br></p><p class="avg">{avg_humi} %</p>', unsafe_allow_html = True)
 
-# -- DASHBOARD PAGE -- 
-st.header("Soil Analytics")
+def filter(df):
+    """Creates a filter for the visualisations. Visualisations and metrics change according to the filters"""
+    
+    # Get the min and max dates from the dataframe
+    min_date = df['datetime'].min().date()
+    max_date = df['datetime'].max().date()
 
-# Metrics
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Nitrogen (N)", "70 mg/L", "1.2 °F")
-col2.metric("Phosporus (P)", "9 mg/L", "-8%")
-col3.metric("Potassium (K)", "86 mg/L", "1.3")
-
-# Plot NPK
-col1, col2 = st.columns([3,1])
-
-# Time series vs NPK
-time_fig = px.line(df, x='datetime', y=['N', 'P', 'K'], title='Nutrient levels')
-time_fig.update_xaxes(
-    rangeslider_visible=True,
-    rangeslider=dict(
-        visible=True,
-        bgcolor='#97a29a', 
-        thickness=0.05 
-    ),
-    rangeselector=dict(
-        buttons=list([
-            dict(count=1, label="1d", step="day", stepmode="backward"),
-            dict(count=7, label="1w", step="day", stepmode="backward"),
-            dict(count=1, label="1m", step="month", stepmode="backward"),
-            dict(count=6, label="6m", step="month", stepmode="backward"),
-            dict(count=1, label="YTD", step="year", stepmode="todate"),
-            dict(count=1, label="1y", step="year", stepmode="backward"),
-            dict(step="all")
-        ])
+    st.markdown(f'<p class="params_text">Chart Data Parameters', unsafe_allow_html = True)
+    # Filter options
+    selected_feature = st.selectbox(
+        "Features",
+        ("NPK", "Temperature", "Humidity")
     )
-)
-col1.plotly_chart(time_fig)
+    start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
+    end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
 
-# Donut chart showing NPK percentage
-labels = ['Nitrogen', 'Phosphorus', 'Potassium']
-values = [40, 30, 30]
-donut_fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.5)])
-donut_fig .update_traces(marker=dict(colors=['#ff9999', '#66b3ff', '#99ff99']),
-                  hoverinfo='label+percent', textinfo='value')
-col2.plotly_chart(donut_fig)
+    # Get filtered data based on selected parameters
+    filtered_df = df[(df['datetime'] >= pd.to_datetime(start_date)) & (df['datetime'] <= pd.to_datetime(end_date))]
 
+    return filtered_df, selected_feature
 
-# Plot area data that switch between temp, humidity, ph and ec
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-st.area_chart(chart_data)
+def display_timegraph(filtered_df, selected_feature):
+    """ Display the time series graph of the selected parameter against time """
 
+    param_map = {
+        "NPK": ['N', 'P', "K"],
+        "Temperature": "Temp",
+        "Humidity": "Humi"
+    }
 
-# Example pH value
-ph_value = 6.8
-
-# Create a gauge chart using Plotly
-fig = go.Figure(go.Indicator(
-    mode="gauge+number",
-    value=ph_value,
-    title={'text': "Soil pH Level"},
-    gauge={'axis': {'range': [0, 14]},
-           'steps': [
-               {'range': [0, 3], 'color': "#ff6666"},
-               {'range': [3, 6], 'color': "#ffcc66"},
-               {'range': [6, 8], 'color': "#99ff99"},
-               {'range': [8, 11], 'color': "#66b3ff"},
-               {'range': [11, 14], 'color': "#cc99ff"}],
-           'bar': {'color': "#000000"}}))
-
-# Customize chart appearance (optional)
-fig.update_layout(height=400)
-
-# Display the gauge chart in Streamlit
-st.plotly_chart(fig)
-
-
-
-#### !!!!!! DUMP ####
-
-st.title("Analytics Demo")
-
-# metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Nitrogen", "70 mg/L", "1.2 °F")
-col2.metric("Phosporus", "9 mg/L", "-8%")
-col3.metric("Humidity", "86 mg/L", "1.3")
-
-st.write("\n")
-col1, col2 = st.columns([3, 1])
-
-col1.subheader("Nutrient Levels")
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-col1.line_chart(chart_data)
-
-df = px.data.tips()
-fig = px.pie(df, values='tip', names='day', color_discrete_sequence=px.colors.sequential.RdBu)
-col2.plotly_chart(fig)
-
-st.write("\n")
-col1.subheader("Other Levels")
-col3, col4, col5= st.columns([3,1,1])
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-col3.area_chart(chart_data)
-col4.metric("Humidity", "86 mg/L", "1.3")
-col4.metric("Humidity", "86 mg/L", "1.3")
-
-import plotly.graph_objects as go
-
-fig3 = go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = 270,
-    domain = {'x': [0, 1], 'y': [0, 1]},
-    title = {'text': "Speed"}))
-col5.plotly_chart(fig3)
-
-# Data columns
-df = pd.read_csv('views/out_sensor.csv')
-df = pd.read_csv('out_sensor.csv')
-df['datetime'] = df['date'] + ' ' + df['time']
-df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
-
-# Create the Plotly figure
-fig = px.line(df, x='datetime', y=['N', 'P', 'K'], title='Nutrient levels')
-
-# Update x-axes with range slider and selectors
-fig.update_xaxes(
-    rangeslider_visible=True,
-    rangeslider=dict(
-        visible=True,
-        bgcolor='#97a29a', 
-        thickness=0.05 
-    ),
-    rangeselector=dict(
-        buttons=list([
-            dict(count=1, label="1d", step="day", stepmode="backward"),
-            dict(count=7, label="1w", step="day", stepmode="backward"),
-            dict(count=1, label="1m", step="month", stepmode="backward"),
-            dict(count=6, label="6m", step="month", stepmode="backward"),
-            dict(count=1, label="YTD", step="year", stepmode="todate"),
-            dict(count=1, label="1y", step="year", stepmode="backward"),
-            dict(step="all")
-        ])
+    # Time series graph
+    param = param_map[selected_feature]
+    time_fig = px.line(
+        filtered_df, x='datetime', 
+        y=param, 
+        title=f'Soil {selected_feature} Levels Over Time', 
+        template="plotly_dark",
+        line_shape="spline")
+    time_fig.update_xaxes(
+        rangeslider_visible=True,
+        rangeslider=dict(
+            visible=True,
+            # bgcolor='#f6f8fc', # range selector color
+            thickness=0.1
+        ),
+        rangeselector=dict(
+            buttons=list([
+                dict(count=1, label="1d", step="day", stepmode="backward"),
+                dict(count=7, label="1w", step="day", stepmode="backward"),
+                dict(count=1, label="1m", step="month", stepmode="backward"),
+                dict(count=6, label="6m", step="month", stepmode="backward"),
+                dict(count=1, label="1y", step="year", stepmode="backward"),
+                dict(step="all")
+            ])
+        )
     )
-)
 
-st.plotly_chart(fig)
+    # Update layout for figure size, background, and title
+    time_fig.update_layout(
+        width=1500,  
+        height=570, 
+        title_font_size=20,  
+        plot_bgcolor='#26282E',   
+        font=dict(
+            color="#f6f6f6",  # Customize font color
+            size=14  # Font size for labels
+        )
+    )
+    
+    st.plotly_chart(time_fig)
+
+def display_donut_chart(df):
+    """ Display a donut chart showing the distribution of N, P, and K in the soil """
+    # Sum the nutrient columns
+    npk_sums = df[['N', 'P', 'K']].sum()
+
+    # Melt the DataFrame to create a category for N, P, K and their values
+    npk_df = pd.DataFrame({
+        'Nutrient': ['N', 'P', 'K'],
+        'Value': [npk_sums['N'], npk_sums['P'], npk_sums['K']]
+    })
+
+    # Create the donut chart using Altair
+    chart = alt.Chart(npk_df).mark_arc(innerRadius=30).encode(
+        theta=alt.Theta(field="Value", type="quantitative"),
+        color=alt.Color(field="Nutrient", type="nominal"),
+        
+    ).properties(
+        width=200,
+        height=200  
+    ).configure_legend(
+        orient='bottom',  
+        labelFontSize=12, 
+        titleFontSize=14 
+    )   
+
+    # Display the chart in Streamlit
+    st.markdown(f'<p class="donut_chart_title">Soil Nutrient Distribution', unsafe_allow_html = True)
+    st.altair_chart(chart, use_container_width=True)
+
+def display_scatterplot(df, x):
+    """ Display a scatter plot of the selected features """
+
+    against_map ={
+        "NPK":["Temp","Humi", "Temperature", "Humidity", ['N', 'P', 'K']],
+        "Temperature": ["Humi",['N', 'P', 'K'], "Humidity", "NPK","Temp"],
+        "Humidity":["Temp", ['N', 'P', 'K'], "Temperature", "NPK","Humi"] 
+    }
+
+    # Create a scatter plot using Plotly
+    fig1 = px.scatter(df, x=against_map[x][4], y=against_map[x][0], title=f'{x} vs {against_map[x][2]}')
+    fig2 = px.scatter(df, x=against_map[x][4], y=against_map[x][1], title=f'{x} vs {against_map[x][3]}')
+    
+    # Update layout to adjust aesthetics
+    fig1.update_layout(
+        xaxis_title=x,   
+        yaxis_title=against_map[x][2],  
+        width=100,       
+        height=400      
+    )
+    fig2.update_layout(
+        xaxis_title=x,  
+        yaxis_title=against_map[x][3],   
+        width=100,       
+        height=400       
+    )
+
+    # Display the scatter plot in Streamlit
+    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
+    
+def display_boxplot(df, selected_feature):
+    """ Display a box plot of the selected_feature """
+
+    param_map = {
+        "NPK": ['N', 'P', 'K'],
+        "Temperature": "Temp",
+        "Humidity": "Humi"
+    }
+
+    # Create a box plot for the 'temp' column using Plotly
+    fig = px.box(df, y=param_map[selected_feature], title=f'Distribution of {selected_feature} Data')
+
+    # Update layout to adjust aesthetics
+    fig.update_layout(
+        yaxis_title=f"{selected_feature}",   # Y-axis title
+        boxmode='group',                  # Group boxes together
+        width=100,                        # Set width
+        height=400                        # Set height
+    )
+
+    
+
+    # Display the box plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+# -- DASHBOARD PAGE --
 
 
-fig2 = px.area(df, x="datetime", y="Temp")
-fig3 = px.area(df, x="datetime", y="Humi")
-fig4 = px.area(df, x="datetime", y="PH")
+st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
+tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
 
 
-fig2.update_yaxes(
-    title = "Temperature",
-    range=[0,40])
+if 'uploaded_df' in st.session_state:
+    df = st.session_state['uploaded_df']  # Get the uploaded DataFrame
+    # Load and transform data
+    df = transform_data('views/out_sensor.csv')
 
-st.plotly_chart(fig2)
-st.plotly_chart(fig3)
-st.plotly_chart(fig4)
-
-
-fig5 = px.scatter(df, x='Temp', y='Humi', title='Temperature vs. Humidity')
-st.plotly_chart(fig5)
-
-fig6 = px.violin(df, y='Temp', box=True, points='all', title='Temperature Violin Plot')
-st.plotly_chart(fig6)
-
-df_drop = df.drop(['datetime', 'date', 'time'], axis=1)
-fig7 = px.imshow(df_drop)
-st.plotly_chart(fig7)
-
-
-fig8 = px.scatter(df, x="Temp", y="Humi")
-fig9 = px.scatter(df, x="Temp", y="PH")
-fig10 = px.scatter(df, x="Temp", y="EC")
-
-fig11 = px.scatter(df, x="Humi", y="PH")
-fig12 = px.scatter(df, x="Humi", y="EC")
-fig13 = px.scatter(df, x="PH", y="EC")
-
-col1, col2 = st.columns([3, 2])
-with col1:
-    st.plotly_chart(fig8)
-    st.plotly_chart(fig9)
-    st.plotly_chart(fig10)
+    # -- ANALYTICS TAB --
+    with tab1:
+        metric_placeholder = st.empty()
+        r2cols = st.columns((4,1.3), gap= "medium")
+        with r2cols[1]:
+            filtered_df, selected_feature = filter(df)
+            st.divider()
+            display_donut_chart(filtered_df)    
+        display_metrics(filtered_df, metric_placeholder)
+        with r2cols[0]:
+            display_timegraph(filtered_df, selected_feature)
+            st.code("descriptive stats", language="python")
+        st.write("")
 
 
-with col2:
-    st.plotly_chart(fig11)
-    st.plotly_chart(fig12)
-    st.plotly_chart(fig13)
+    # -- DATA OVERVIEW TAB --
+    with tab2:
+        st.write(filtered_df)
+        # !!!!!
+        # insert filter here
+        # insert button to update chart
 
 
-import plotly.express as px
-import pandas as pd
+    # -- ADVANCED ANALYTICS TAB --
+    with tab3:
+        st.caption("Analytics based on selected parameters:")
+        st.success(selected_feature)
+        cols = st.columns(2, gap="medium")
+        with cols[0]:
+            # Distribution of data
+            display_boxplot(filtered_df, selected_feature)
 
-fig = px.line(df, x='datetime', y='N', title='Time Series with Rangeslider')
+        with cols[1]:
+            # Calculate correlation matrix
+            corr_matrix = filtered_df.drop(columns=['datetime','date','time']).corr()
 
-fig.update_xaxes(rangeslider_visible=True)
-st.plotly_chart(fig)
+            # Create a heatmap using Plotly
+            fig = px.imshow(corr_matrix, 
+                            text_auto=True, 
+                            aspect="auto", 
+                            color_continuous_scale="Viridis", 
+                            title="Correlation Map of Soil Properties")
 
+            # Display the heatmap in Streamlit
+            st.plotly_chart(fig, use_container_width=True)
 
-import plotly.express as px
-import streamlit as st
-
-# Sample DataFrame
-df = px.data.stocks()
-
-# Create line plot with range slider
-fig = px.line(df, x='date', y='GOOG', title='Google Stock Prices with Range Slider')
-
-# Add range slider
-fig.update_xaxes(rangeslider_visible=True)
-
-# Display plot in Streamlit
-st.plotly_chart(fig)
+        display_scatterplot(filtered_df, selected_feature)
+else:
+    st.write("Please upload a CSV file to proceed.")
