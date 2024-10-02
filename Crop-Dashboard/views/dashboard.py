@@ -3,6 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import altair as alt
 
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}<style>', unsafe_allow_html=True)
@@ -43,8 +44,6 @@ def filter(df):
     max_date = df['datetime'].max().date()
 
     st.markdown(f'<p class="params_text">Chart Data Parameters', unsafe_allow_html = True)
-    st.divider()
-
     # Filter options
     selected_feature = st.selectbox(
         "Features",
@@ -52,7 +51,7 @@ def filter(df):
     )
     start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
     end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
-    
+
     # Get filtered data based on selected parameters
     filtered_df = df[(df['datetime'] >= pd.to_datetime(start_date)) & (df['datetime'] <= pd.to_datetime(end_date))]
 
@@ -95,7 +94,7 @@ def display_timegraph(filtered_df, selected_feature):
     # Update layout for figure size, background, and title
     time_fig.update_layout(
         width=1500,  
-        height=600, 
+        height=570, 
         title_font_size=20,  
         plot_bgcolor='#f6f8fc',   
         font=dict(
@@ -103,75 +102,141 @@ def display_timegraph(filtered_df, selected_feature):
             size=14  # Font size for labels
         )
     )
+    
     st.plotly_chart(time_fig)
 
+def display_donut_chart(df):
+    """ Display a donut chart showing the distribution of N, P, and K in the soil """
+    # Sum the nutrient columns
+    npk_sums = df[['N', 'P', 'K']].sum()
+
+    # Melt the DataFrame to create a category for N, P, K and their values
+    npk_df = pd.DataFrame({
+        'Nutrient': ['N', 'P', 'K'],
+        'Value': [npk_sums['N'], npk_sums['P'], npk_sums['K']]
+    })
+
+    # Create the donut chart using Altair
+    chart = alt.Chart(npk_df).mark_arc(innerRadius=30).encode(
+        theta=alt.Theta(field="Value", type="quantitative"),
+        color=alt.Color(field="Nutrient", type="nominal")
+    ).properties(
+        width=200,
+        height=200  
+    ).configure_legend(
+        orient='bottom',  
+        labelFontSize=12, 
+        titleFontSize=14 
+    )   
+
+    # Display the chart in Streamlit
+    st.markdown(f'<p class="donut_chart_title">Soil Nutrient Distribution', unsafe_allow_html = True)
+    st.altair_chart(chart, use_container_width=True)
+
+def display_scatterplot(df, x):
+    """ Display a scatter plot of the selected features """
+
+    against_map ={
+        "NPK":["Temp","Humi", "Temperature", "Humidity", ['N', 'P', 'K']],
+        "Temperature": ["Humi",['N', 'P', 'K'], "Humidity", "NPK","Temp"],
+        "Humidity":["Temp", ['N', 'P', 'K'], "Temperature", "NPK","Humi"] 
+    }
+
+    # Create a scatter plot using Plotly
+    fig1 = px.scatter(df, x=against_map[x][4], y=against_map[x][0], title=f'{x} vs {against_map[x][2]}')
+    fig2 = px.scatter(df, x=against_map[x][4], y=against_map[x][1], title=f'{x} vs {against_map[x][3]}')
+    
+    # Update layout to adjust aesthetics
+    fig1.update_layout(
+        xaxis_title=x,   # X-axis title
+        yaxis_title=against_map[x][2],   # Y-axis title
+        width=100,       # Set width
+        height=400       # Set height
+    )
+    fig2.update_layout(
+        xaxis_title=x,   # X-axis title
+        yaxis_title=against_map[x][3],   # Y-axis title
+        width=100,       # Set width
+        height=400       # Set height
+    )
+
+    # Display the scatter plot in Streamlit
+    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
+
 # -- DASHBOARD PAGE --
-# Reducing whitespace on the top of the page
-st.markdown("""
-<style>
-
-.block-container
-{
-    padding-top: 1rem;
-    padding-bottom: 0rem;
-    margin-top: 1rem;
-}
-
-</style>
-""", unsafe_allow_html=True)
+st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
+tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
 
 # Load and transform data
 df = transform_data('views/out_sensor.csv')
 
-# Dashboard row 1
-r1cols = st.columns([1,0.2,5])
-with r1cols[0]:
-    st.markdown('<p class="dashboard_title"><span class="dashboard_subtitle">Soil Analytics<br></span> Dashboard</p>', unsafe_allow_html = True)
-with r1cols[2]:
+# -- ANALYTICS TAB --
+with tab1:
     metric_placeholder = st.empty()
+    r2cols = st.columns((4,1.3), gap= "medium")
+    with r2cols[1]:
+        filtered_df, selected_feature = filter(df)
+        st.divider()
+        display_donut_chart(filtered_df)    
+    display_metrics(filtered_df, metric_placeholder)
+    with r2cols[0]:
+        display_timegraph(filtered_df, selected_feature)
+        st.code("descriptive stats", language="python")
 
-# Dashboard row 2
-r2cols = st.beta_columns((4,1.3), gap= "medium")
-with r2cols[1]:
-    filtered_df, selected_feature = filter(df)
-    st.write(len(filtered_df))
 
-with r2cols[1]:
-    # NPK proportions donut chart
-    npk_sums = filtered_df[['N', 'P', 'K']].sum()
-    donut_fig = go.Figure(data=[go.Pie(labels=['N', 'P', 'K'], values=npk_sums, hole=.3)])
-    donut_fig.update_layout(title_text="Soil Nutrient Composition")
-    st.plotly_chart(donut_fig)
+# -- DATA OVERVIEW TAB --
+with tab2:
+    st.write(filtered_df)
 
-display_metrics(filtered_df, metric_placeholder)
-with r2cols[0]:
-    display_timegraph(filtered_df, selected_feature)
-    st.code("descriptive stats", language="python")
 
-#st.write(filtered_df)
+# -- ADVANCED ANALYTICS TAB --
+def display_boxplot(df, selected_feature):
+    """ Display a box plot of the selected_feature """
 
-import streamlit as st
-
-# Custom CSS to add borders to each row in col2
-st.markdown("""
-    <style>
-    .custom-row {
-        border: 2px solid #4CAF50;  /* Green border */
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
+    param_map = {
+        "NPK": ['N', 'P', 'K'],
+        "Temperature": "Temp",
+        "Humidity": "Humi"
     }
-    </style>
-    """, unsafe_allow_html=True)
 
-# Create a row with two columns
-col1, col2 = st.columns(2)
+    # Create a box plot for the 'temp' column using Plotly
+    fig = px.box(df, y=param_map[selected_feature], title=f'Distribution of {selected_feature} Data')
 
-# Left column (col1) - One row
-with col1:
-    st.write("This is the left column with one row")
+    # Update layout to adjust aesthetics
+    fig.update_layout(
+        yaxis_title=f"{selected_feature}",   # Y-axis title
+        boxmode='group',                  # Group boxes together
+        width=100,                        # Set width
+        height=400                        # Set height
+    )
 
-# Right column (col2) - Two rows with CSS borders
-with col2:
-    st.markdown('<div class="custom-row">This is the top row of the right column</div>', unsafe_allow_html=True)
-    st.markdown('<div class="custom-row">This is the bottom row of the right column</div>', unsafe_allow_html=True)
+    
+
+    # Display the box plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+with tab3:
+    st.caption("Analytics based on selected parameters:")
+    st.success(selected_feature)
+    cols = st.columns(2, gap="medium")
+    with cols[0]:
+        # Distribution of data
+        display_boxplot(filtered_df, selected_feature)
+
+    with cols[1]:
+        # Calculate correlation matrix
+        corr_matrix = filtered_df.drop(columns=['datetime','date','time']).corr()
+
+        # Create a heatmap using Plotly
+        fig = px.imshow(corr_matrix, 
+                        text_auto=True, 
+                        aspect="auto", 
+                        color_continuous_scale="Viridis", 
+                        title="Correlation Map of Soil Properties")
+
+        # Display the heatmap in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
+
+    display_scatterplot(filtered_df, selected_feature)

@@ -23,15 +23,11 @@ chatbot_page = st.Page(
     title="Chat bot",
     icon=":material/smart_toy:"
 )
-tst_page = st.Page(
-    page="views/tst.py",
-    title="test",
-    icon=":material/smart_toy:"
-)
+
 
 
 # -- NAVIGATION SETUP --
-pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page, tst_page])
+pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page])
 
 # -- SHARED ON ALL PAGES --
 st.logo("assets/logo.png")
