@@ -6,11 +6,11 @@ from scipy import stats
 
 
 # List of specific columns user may request
-specific_columns = ["N", "P", "K", "Humi", "date", "Temp", "EC", "PH", "time"]
+specific_columns = ["N", "P", "K", "Humidity", "date", "Temperature", "EC", "PH", "time"]
 
 z_thresholds = {
-    "Humi": 4,  # A larger threshold for humidity
-    "Temp": 4,  # Default threshold for temperature
+    "Humidity": 4,  # A larger threshold for humidity
+    "Temperature": 4,  # Default threshold for temperature
     "EC": 5,
     "PH": 5,
     "N": 6,
@@ -29,8 +29,9 @@ st.markdown("""
     <p style='color: grey;'>
         - What are the unique values in each column?<br>
         - How many missing values are in each column?<br>
-        - What are the data types of each column?<br>
+        - What is the average Humidity?<br>
         - Can you summarize the dataset for me?
+        * For column prompt, please use the exact column name.
     </p>
 """, unsafe_allow_html=True)
 
@@ -57,7 +58,7 @@ if 'uploaded_df' in st.session_state:
         # Generate response based on the prompt
         response = ""
         
-        if "summary" in prompt.lower():
+        if "summary" in prompt.lower() or "summarize" in prompt.lower() or "summarise" in prompt.lower():
             # Get the summary statistics, reset index so that "count", "mean", etc., appear as a column
             summary_stats = df.describe().reset_index()
             # Convert the summary statistics to markdown format
@@ -68,7 +69,7 @@ if 'uploaded_df' in st.session_state:
                 response = ""
                 for col in specific_columns:
                     # Check if the requested column exists in the dataframe
-                    if col in df.columns and col.lower() in prompt.lower():
+                    if col in df.columns and col in prompt:
                         unique_values = df[col].unique()  # Get unique values
                         num_unique_values = df[col].nunique()  # Get number of unique values
                         
@@ -106,7 +107,7 @@ if 'uploaded_df' in st.session_state:
                 response = ""
                 for col in specific_columns:
                     # Check if the requested column exists in the dataframe
-                    if col in df.columns and col.lower() in prompt.lower():
+                    if col in df.columns and col in prompt:
                         # Calculate the missing values for the specific column
                         missing_count = df[col].isna().sum()
 
@@ -132,7 +133,7 @@ if 'uploaded_df' in st.session_state:
                 response = ""
                 for col in specific_columns:
                     # Check if the requested column exists in the dataframe
-                    if col in df.columns and col.lower() in prompt.lower():
+                    if col in df.columns and col in prompt:
                         # Check if the column is numeric before calculating the average
                         if pd.api.types.is_numeric_dtype(df[col]):
                             avg_value = df[col].mean().round(2)  # Calculate average for the specific column
@@ -186,7 +187,7 @@ if 'uploaded_df' in st.session_state:
                 response = ""
                 for col in specific_columns:
                     # Check if the requested column exists in the dataframe
-                    if col in df.columns and col.lower() in prompt.lower():
+                    if col in df.columns and col in prompt:
                         # Calculate the mode for the specific column
                         mode_values = df[col].mode()
                         if not mode_values.empty:
@@ -316,11 +317,38 @@ if 'uploaded_df' in st.session_state:
                 # Convert the DataFrame to markdown format
                 response = datatype_df.to_markdown(index=False)
 
+        elif "total number of data" in prompt.lower() or "number of rows" in prompt.lower() or "total rows" in prompt.lower() or "row" in prompt.lower():
+            # Check if df is defined and has data
+            if 'df' in locals() and not df.empty:
+                total_rows = len(df)
+                response = f"The total number of data points (rows) in the dataset is: {total_rows}."
+
+        elif "column" in prompt.lower() or "number of columns" in prompt.lower():
+            # Check if df is defined and has data
+            if 'df' in locals() and not df.empty:
+                total_columns = len(df.columns)
+                column_names = ', '.join(df.columns)  # Get the column names
+                response = f"The total number of columns in the dataset is: {total_columns}. The columns are: {column_names}."
+ 
+        
         elif "hello" in prompt.lower() or "hi" in prompt.lower():
             response = "Hello! How can I assist you today?"
             
         elif "thank you" in prompt.lower():
             response = "You're welcome! If you have any other questions, feel free to ask."
+
+        elif "humi" in  prompt.lower():
+            response = "Do you mean Humidity?"
+
+        elif "temp" in  prompt.lower():
+            response = "Do you mean Temperature?"
+        
+        elif "ec" in prompt or "ph" in prompt or "n" in prompt or "k" in prompt or "p" in prompt or "temperature" in prompt or "humidity" in prompt:
+            response = "I'm sorry please be more specific."
+
+        else:
+        # Handle unrecognized prompts
+            response = "I'm sorry, I didn't understand that. Can you please rephrase your question or ask about something else? "
             
         # Display assistant response
         with st.chat_message("assistant"):
