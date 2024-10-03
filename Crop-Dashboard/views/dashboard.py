@@ -231,15 +231,93 @@ def display_boxplot(df, selected_feature):
         "Humidity": "Humi"
     }
 
-    # Create a box plot for the 'temp' column using Plotly
-    fig = px.box(df, y=param_map[selected_feature], title=f'Distribution of {selected_feature} Data')
+    custom_hover_text = {
+        "NPK": {
+            'N': 'Nitrogen (N)', 
+            'P': 'Phosphorus (P)', 
+            'K': 'Potassium (K)'
+        },
+        "Temperature": 'Temperature (°C)',
+        "Humidity": 'Humidity (%)'
+    }
+
+    # Initialize the Plotly figure object
+    fig = go.Figure()
+
+    # If NPK is selected, plot all three (N, P, K) together
+    if selected_feature == "NPK":
+        for nutrient in param_map["NPK"]:
+            # Calculate boxplot statistics manually using pandas
+            q1 = df[nutrient].quantile(0.25)
+            q3 = df[nutrient].quantile(0.75)
+            median = df[nutrient].median()
+            min_val = df[nutrient].min()
+            max_val = df[nutrient].max()
+            mean_val = df[nutrient].mean()
+            iqr = q3 - q1
+            upper_fence = q3 + 1.5 * iqr
+            lower_fence = q1 - 1.5 * iqr
+            if lower_fence < 0:
+                lower_fence = min_val
+
+            # Add a boxplot for each nutrient
+            fig.add_trace(go.Box(
+                y=df[nutrient],
+                name=custom_hover_text['NPK'][nutrient],  # Custom label (e.g., Nitrogen (N))
+                boxmean=True,  # Display mean value as well
+                hovertemplate=(
+                    f"<b>Nutrient:</b> {custom_hover_text['NPK'][nutrient]}<br>"
+                    f"<b>Max:</b> {max_val:.2f}<br>"  # Max value
+                    f"<b>Upper Fence:</b> {upper_fence:.2f}<br>"  # Upper Fence
+                    f"<b>Upper Quartile (Q3):</b> {q3:.2f}<br>"  # Q3
+                    f"<b>Mean:</b> {mean_val:.2f}<br>"  # Mean value
+                    f"<b>Median (Q2):</b> {median:.2f}<br>"  # Median
+                    f"<b>Lower Quartile (Q1):</b> {q1:.2f}<br>"  # Q1
+                    f"<b>Lower Fence:</b> {lower_fence:.2f}<br>"  # Lower Fence
+                    f"<b>Min:</b> {min_val:.2f}<br>"  # Min value
+                    "<extra></extra>"
+                )
+            ))
+
+    else:
+        # For Temperature or Humidity, plot a single boxplot
+        q1 = df[param_map[selected_feature]].quantile(0.25)
+        q3 = df[param_map[selected_feature]].quantile(0.75)
+        median = df[param_map[selected_feature]].median()
+        min_val = df[param_map[selected_feature]].min()
+        max_val = df[param_map[selected_feature]].max()
+        mean_val = df[param_map[selected_feature]].mean()
+        iqr = q3 - q1
+        upper_fence = q3 + 1.5 * iqr
+        lower_fence = q1 - 1.5 * iqr
+        if lower_fence < 0:
+            lower_fence = min_val
+
+        fig.add_trace(go.Box(
+            y=df[param_map[selected_feature]],
+            name=custom_hover_text[selected_feature],  # Custom label (e.g., Temperature (°C))
+            boxmean=True,  # Display mean value as well
+            hovertemplate=(
+                f"<b>{custom_hover_text[selected_feature]}:</b><br>"
+                f"<b>Max:</b> {max_val:.2f}<br>"  # Max value
+                f"<b>Upper Fence:</b> {upper_fence:.2f}<br>"  # Upper Fence
+                f"<b>Upper Quartile (Q3):</b> {q3:.2f}<br>"  # Q3
+                f"<b>Mean:</b> {mean_val:.2f}<br>"  # Mean value
+                f"<b>Median (Q2):</b> {median:.2f}<br>"  # Median
+                f"<b>Lower Quartile (Q1):</b> {q1:.2f}<br>"  # Q1
+                f"<b>Lower Fence:</b> {lower_fence:.2f}<br>"  # Lower Fence
+                f"<b>Min:</b> {min_val:.2f}<br>"  # Min value
+                "<extra></extra>"
+            )
+        ))
 
     # Update layout to adjust aesthetics
     fig.update_layout(
+        title=f"Distribution of {selected_feature} Data",
         yaxis_title=f"{selected_feature}",   # Y-axis title
         boxmode='group',                  # Group boxes together
-        width=100,                        # Set width
-        height=400                        # Set height
+        width=800,                        # Set width
+        height=500                        # Set height
     )
 
     
