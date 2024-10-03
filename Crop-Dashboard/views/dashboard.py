@@ -162,16 +162,21 @@ def display_donut_chart(df):
     # Sum the nutrient columns
     npk_sums = df[['N', 'P', 'K']].sum()
 
+    total_npk = npk_sums.sum()
+
     # Melt the DataFrame to create a category for N, P, K and their values
     npk_df = pd.DataFrame({
         'Nutrient': ['N', 'P', 'K'],
-        'Value': [npk_sums['N'], npk_sums['P'], npk_sums['K']]
+        'Value': [npk_sums['N'], npk_sums['P'], npk_sums['K']],
+        'Percentage': [npk_sums['N'] / total_npk * 100, npk_sums['P'] / total_npk * 100, npk_sums['K'] / total_npk * 100]
     })
 
     # Create the donut chart using Altair
     chart = alt.Chart(npk_df).mark_arc(innerRadius=30).encode(
         theta=alt.Theta(field="Value", type="quantitative"),
         color=alt.Color(field="Nutrient", type="nominal"),
+        tooltip=[alt.Tooltip('Nutrient:N', title='Nutrient Type'), 
+                 alt.Tooltip('Percentage:Q', title='Percentage (%)', format='.2f')]
         
     ).properties(
         width=200,
