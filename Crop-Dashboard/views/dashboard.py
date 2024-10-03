@@ -320,8 +320,6 @@ def display_boxplot(df, selected_feature):
         height=500                        # Set height
     )
 
-    
-
     # Display the box plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
@@ -379,6 +377,15 @@ if 'uploaded_df' in st.session_state:
                             aspect="auto", 
                             color_continuous_scale="Viridis", 
                             title="Correlation Map of Soil Properties")
+            
+            fig.update_traces(
+                hovertemplate=(
+                    "<b>Variable 1:</b> %{x}<br>"  # Row (variable 1)
+                    "<b>Variable 2:</b> %{y}<br>"  # Column (variable 2)
+                    "<b>Correlation Value:</b> %{z:.2f}<br>"  # Correlation value (z)
+                    "<extra></extra>"
+                )
+            )
 
             # Display the heatmap in Streamlit
             st.plotly_chart(fig, use_container_width=True)
