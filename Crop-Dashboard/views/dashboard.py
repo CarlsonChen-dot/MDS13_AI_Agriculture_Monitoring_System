@@ -67,14 +67,63 @@ def display_timegraph(filtered_df, selected_feature):
         "Humidity": "Humi"
     }
 
+    custom_hover_text = {
+        "NPK": {
+            'N': 'Nitrogen (N)', 
+            'P': 'Phosphorus (P)', 
+            'K': 'Potassium (K)'
+        },
+        "Temperature": 'Temperature (°C)',
+        "Humidity": 'Humidity (%)'
+    }
+
     # Time series graph
     param = param_map[selected_feature]
-    time_fig = px.line(
-        filtered_df, x='datetime', 
-        y=param, 
-        title=f'Soil {selected_feature} Levels Over Time', 
-        template="plotly_dark",
-        line_shape="spline")
+    if selected_feature == "NPK":
+        # For NPK, display all three (N, P, K) with labels
+        time_fig = px.line(
+            filtered_df, x='datetime', 
+            y=param,  # Plot N, P, and K together
+            title=f'Soil {selected_feature} Levels Over Time', 
+            template="plotly_dark",
+            line_shape="spline"
+        )
+        # Customize hover labels for NPK
+        time_fig.for_each_trace(
+            lambda trace: trace.update(
+                hovertemplate=(
+                    "<b>Date:</b> %{x|%B %d, %Y}<br>" +  # Display the date part
+                    "<b>Time:</b> %{x|%H:%M:%S}<br>" +
+                    f"<b>{custom_hover_text['NPK'][trace.name]}:</b> "  # Correct N, P, K label
+                    "%{y:.2f} units<br>" +  # Ensure y value is accessed and formatted to 2 decimal places
+                    "<extra></extra>"
+                )
+            )
+        )
+
+    else:
+        # For Temperature and Humidity, use the same method as NPK
+        hover_label = custom_hover_text[selected_feature]
+        time_fig = px.line(
+            filtered_df, x='datetime', 
+            y=param,  # Plot the selected single parameter (Temp or Humi)
+            title=f'{selected_feature} Levels Over Time', 
+            template="plotly_dark",
+            line_shape="spline"
+        )
+        # Customize hover labels for Temperature and Humidity
+        time_fig.for_each_trace(
+            lambda trace: trace.update(
+                hovertemplate=(
+                    "<b>Date:</b> %{x|%B %d, %Y}<br>" +  # Display the date part
+                    "<b>Time:</b> %{x|%H:%M:%S}<br>" +   # Display the time part
+                    f"<b>{hover_label}:</b> "
+                    "%{y:.2f}<br>" +  # Format with two decimals
+                    "<extra></extra>"
+                )
+            )
+        )
+    
     time_fig.update_xaxes(
         rangeslider_visible=True,
         rangeslider=dict(
