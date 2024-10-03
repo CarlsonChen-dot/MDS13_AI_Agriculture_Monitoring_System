@@ -204,6 +204,46 @@ def display_scatterplot(df, x):
     fig1 = px.scatter(df, x=against_map[x][4], y=against_map[x][0], title=f'{x} vs {against_map[x][2]}')
     fig2 = px.scatter(df, x=against_map[x][4], y=against_map[x][1], title=f'{x} vs {against_map[x][3]}')
     
+    if x == "NPK":
+        # Customize hover labels for the scatter plot
+        fig1.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
+                f"<b>{against_map[x][2]}:</b>" 
+                "%{y:.2f}<br>" +  # Display the y value (y-axis)
+                "<extra></extra>"
+            )
+        )
+
+        fig2.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
+                f"<b>{against_map[x][3]}:</b>" 
+                "%{y:.2f}<br>" +  # Display the y value (y-axis)
+                "<extra></extra>"
+            )
+        )
+    else:
+        # Customize hover labels for the scatter plot
+        fig1.update_traces(
+            hovertemplate=(
+                f"<b>{x}:</b>"
+                "%{x}<br>" +  # Display the x value (x-axis)
+                f"<b>{against_map[x][2]}:</b>" 
+                "%{y:.2f}<br>" +  # Display the y value (y-axis)
+                "<extra></extra>"
+            )
+        )
+
+        fig2.update_traces(
+            hovertemplate=(
+                f"<b>{x}:</b>" 
+                "%{x}<br>" +  # Display the x value (x-axis)
+                "Nutrient value: %{y:.2f}<br>" +  # Display the y value (y-axis)
+                "<extra></extra>"
+            )
+        )
+
     # Update layout to adjust aesthetics
     fig1.update_layout(
         xaxis_title=x,   
