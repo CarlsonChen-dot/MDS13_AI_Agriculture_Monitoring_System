@@ -96,6 +96,27 @@ div.st-emotion-cache-el1bu4.e1f1d6gn3{
     padding-top: 0px;
 }
 
+/* Adjust the size of the selectbox */
+div[data-baseweb="select"] {
+    width: 50% !important;
+}
+
+/* Adjust the size of the slider */
+.stSlider {
+    width: 50% !important;
+}
+
+/* Adjust the size of the date input */
+.stDateInput {
+    width: 50% !important; 
+}
+
+/* Adjust the size of the buttons */
+div.stButton > button {
+    width: 150px;
+    height: 40px;  
+}
+
 
 
 

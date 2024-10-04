@@ -392,11 +392,79 @@ if 'uploaded_df' in st.session_state:
 
     # -- DATA OVERVIEW TAB --
     with tab2:
-        st.write(filtered_df)
-        # !!!!!
-        # insert filter here
-        # insert button to update chart
+        display_df = st.empty()
 
+        display_df.write(filtered_df)
+        filtered_df_copy = filtered_df.copy()
+
+        # Convert date and time to datetime format
+        filtered_df['date'] = pd.to_datetime(filtered_df['date'], format='%d/%m/%Y').dt.date
+        filtered_df['time'] = pd.to_datetime(filtered_df['time'], format='%H:%M:%S').dt.time
+
+        # Define the list of attributes that users can choose from
+        attributes = filtered_df.columns[:-1].tolist()  # ['N', 'P', 'K', 'Temp', 'Humi']
+
+        # Create a mapping for nicer display names
+        attribute_display_names = {
+            'N': 'Nitrogen (N)',
+            'P': 'Phosphorus (P)',
+            'K': 'Potassium (K)',
+            'Temp': 'Temperature',
+            'Humi': 'Humidity',
+            'date': 'Date',
+            'time': 'Time',
+            'EC': 'Electrical Conductivity',
+            'PH': 'pH Level'
+        }
+        
+        # Create a multiselect dropdown to select the attributes
+        selected_attribute = st.selectbox("Select an attributes to filter", attributes, format_func=lambda x: attribute_display_names[x])
+
+        if selected_attribute == 'date':
+            date_range = st.date_input(
+                "Select a date range:",
+                min_value=filtered_df['date'].min(),
+                max_value=filtered_df['date'].max(),
+                value=(filtered_df['date'].min(), filtered_df['date'].max())
+            )
+
+            # Check if both start_date and end_date are selected
+            if len(date_range) == 2:
+                start_date, end_date = date_range
+            else:
+                start_date, end_date = filtered_df['date'].min(), filtered_df['date'].max()
+
+            if st.button("Submit Filter"):
+                filtered_df = filtered_df[(filtered_df['date'] >= start_date) & (filtered_df['date'] <= end_date)]
+                display_df.write(filtered_df)
+
+        elif selected_attribute == 'time':
+            start_time, end_time = st.slider(
+                "Select a time range:",
+                value=(filtered_df['time'].min(), filtered_df['time'].max()),
+                format="HH:mm:ss"
+            )
+
+            if st.button("Submit Filter"):
+                filtered_df = filtered_df[(filtered_df['time'] >= start_time) & (filtered_df['time'] <= end_time)]
+                display_df.write(filtered_df)
+
+        else:
+        # Create a slider based on the selected attribute
+            min_value, max_value = st.slider(
+                f"Select a range for {selected_attribute} values:",
+                min_value=float(df[selected_attribute].min()),  # Min value from the selected column
+                max_value=float(df[selected_attribute].max()),  # Max value from the selected column
+                value=(float(df[selected_attribute].min()), float(df[selected_attribute].max()))  # Default range
+            )
+
+            # Filter the DataFrame based on the selected attribute and range
+            if st.button("Submit Filter"):
+                filtered_df = df[(df[selected_attribute] >= min_value) & (df[selected_attribute] <= max_value)]
+                display_df.write(filtered_df)
+
+        if st.button("Reset Filter"):
+            display_df.write(filtered_df_copy)     # Update the displayed DataFrame
 
     # -- ADVANCED ANALYTICS TAB --
     with tab3:
