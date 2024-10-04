@@ -227,9 +227,9 @@ def display_scatterplot(df, x):
         # Customize hover labels for the scatter plot
         fig1.update_traces(
             hovertemplate=(
-                f"<b>{x}:</b>"
+                f"<b>{x}: </b>"
                 "%{x}<br>" +  # Display the x value (x-axis)
-                f"<b>{against_map[x][2]}:</b>" 
+                f"<b>{against_map[x][2]}: </b>" 
                 "%{y:.2f}<br>" +  # Display the y value (y-axis)
                 "<extra></extra>"
             )
@@ -237,7 +237,7 @@ def display_scatterplot(df, x):
 
         fig2.update_traces(
             hovertemplate=(
-                f"<b>{x}:</b>" 
+                f"<b>{x}: </b>" 
                 "%{x}<br>" +  # Display the x value (x-axis)
                 "Nutrient value: %{y:.2f}<br>" +  # Display the y value (y-axis)
                 "<extra></extra>"
