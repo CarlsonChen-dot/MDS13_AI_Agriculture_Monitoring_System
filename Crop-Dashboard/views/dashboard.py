@@ -394,15 +394,20 @@ if 'uploaded_df' in st.session_state:
     with tab2:
         display_df = st.empty()
 
-        display_df.write(filtered_df)
-        filtered_df_copy = filtered_df.copy()
+        # If filtered_df is not in session_state, initialize it with the original filtered_df
+        if 'filtered_df' not in st.session_state:
+            st.session_state.filtered_df = filtered_df.copy()  # Store the unfiltered DataFrame initially
+            st.session_state.filtered_df_copy = filtered_df.copy()  # Backup for reset
+
+        # Display the current DataFrame (filtered or original)
+        display_df.write(st.session_state.filtered_df)
 
         # Convert date and time to datetime format
-        filtered_df['date'] = pd.to_datetime(filtered_df['date'], format='%d/%m/%Y').dt.date
-        filtered_df['time'] = pd.to_datetime(filtered_df['time'], format='%H:%M:%S').dt.time
+        st.session_state.filtered_df['date'] = pd.to_datetime(st.session_state.filtered_df['date'], format='%d/%m/%Y').dt.date
+        st.session_state.filtered_df['time'] = pd.to_datetime(st.session_state.filtered_df['time'], format='%H:%M:%S').dt.time
 
         # Define the list of attributes that users can choose from
-        attributes = filtered_df.columns[:-1].tolist()  # ['N', 'P', 'K', 'Temp', 'Humi']
+        attributes = st.session_state.filtered_df.columns[:-1].tolist()  # Exclude the last column
 
         # Create a mapping for nicer display names
         attribute_display_names = {
@@ -417,54 +422,59 @@ if 'uploaded_df' in st.session_state:
             'PH': 'pH Level'
         }
         
-        # Create a multiselect dropdown to select the attributes
-        selected_attribute = st.selectbox("Select an attributes to filter", attributes, format_func=lambda x: attribute_display_names[x])
+        # Create a dropdown to select the attribute for filtering
+        selected_attribute = st.selectbox("Select an attribute to filter", attributes, format_func=lambda x: attribute_display_names[x])
 
         if selected_attribute == 'date':
             date_range = st.date_input(
                 "Select a date range:",
-                min_value=filtered_df['date'].min(),
-                max_value=filtered_df['date'].max(),
-                value=(filtered_df['date'].min(), filtered_df['date'].max())
+                min_value=st.session_state.filtered_df['date'].min(),
+                max_value=st.session_state.filtered_df['date'].max(),
+                value=(st.session_state.filtered_df['date'].min(), st.session_state.filtered_df['date'].max())
             )
 
-            # Check if both start_date and end_date are selected
-            if len(date_range) == 2:
-                start_date, end_date = date_range
-            else:
-                start_date, end_date = filtered_df['date'].min(), filtered_df['date'].max()
-
             if st.button("Submit Filter"):
-                filtered_df = filtered_df[(filtered_df['date'] >= start_date) & (filtered_df['date'] <= end_date)]
-                display_df.write(filtered_df)
+                # Apply the date filter and update the session state
+                start_date, end_date = date_range
+                st.session_state.filtered_df = st.session_state.filtered_df[
+                    (st.session_state.filtered_df['date'] >= start_date) & (st.session_state.filtered_df['date'] <= end_date)
+                ]
+                display_df.write(st.session_state.filtered_df)  # Update the display
 
         elif selected_attribute == 'time':
             start_time, end_time = st.slider(
                 "Select a time range:",
-                value=(filtered_df['time'].min(), filtered_df['time'].max()),
+                value=(st.session_state.filtered_df['time'].min(), st.session_state.filtered_df['time'].max()),
                 format="HH:mm:ss"
             )
 
             if st.button("Submit Filter"):
-                filtered_df = filtered_df[(filtered_df['time'] >= start_time) & (filtered_df['time'] <= end_time)]
-                display_df.write(filtered_df)
+                # Apply the time filter and update the session state
+                st.session_state.filtered_df = st.session_state.filtered_df[
+                    (st.session_state.filtered_df['time'] >= start_time) & (st.session_state.filtered_df['time'] <= end_time)
+                ]
+                display_df.write(st.session_state.filtered_df)  # Update the display
 
         else:
-        # Create a slider based on the selected attribute
+            # Create a slider for numeric attributes
             min_value, max_value = st.slider(
-                f"Select a range for {selected_attribute} values:",
-                min_value=float(df[selected_attribute].min()),  # Min value from the selected column
-                max_value=float(df[selected_attribute].max()),  # Max value from the selected column
-                value=(float(df[selected_attribute].min()), float(df[selected_attribute].max()))  # Default range
+                f"Select a range for {attribute_display_names[selected_attribute]} values:",
+                min_value=float(st.session_state.filtered_df[selected_attribute].min()),
+                max_value=float(st.session_state.filtered_df[selected_attribute].max()),
+                value=(float(st.session_state.filtered_df[selected_attribute].min()), float(st.session_state.filtered_df[selected_attribute].max()))
             )
 
-            # Filter the DataFrame based on the selected attribute and range
             if st.button("Submit Filter"):
-                filtered_df = df[(df[selected_attribute] >= min_value) & (df[selected_attribute] <= max_value)]
-                display_df.write(filtered_df)
+                # Apply the numeric filter and update the session state
+                st.session_state.filtered_df = st.session_state.filtered_df[
+                    (st.session_state.filtered_df[selected_attribute] >= min_value) & (st.session_state.filtered_df[selected_attribute] <= max_value)
+                ]
+                display_df.write(st.session_state.filtered_df)  # Update the display
 
+        # Add a Reset button to reset the DataFrame to its original state
         if st.button("Reset Filter"):
-            display_df.write(filtered_df_copy)     # Update the displayed DataFrame
+            st.session_state.filtered_df = st.session_state.filtered_df_copy.copy()  # Reset to the original DataFrame
+            display_df.write(st.session_state.filtered_df)  # Update the display
 
     # -- ADVANCED ANALYTICS TAB --
     with tab3:
