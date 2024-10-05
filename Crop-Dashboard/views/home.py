@@ -58,10 +58,6 @@ def is_valid(file):
         if col not in columns:
             return False, "Column headers do not match."
     
-#    # Check if the columns match
-#     if columns != expected_columns:
-#         return False, "Column headers do not match."
-    
     # Define expected data types for each column (example: float for sensor readings, str for date/time)
     expected_dtypes = {
         "date": "object",   # str for date, could also use datetime if needed
@@ -132,7 +128,9 @@ def rename_columns(df):
     # Define the mapping from old column names to new column names
     new_column_names = {
         "Humi": "Humidity",
-        "Temp": "Temperature"
+        "Temp": "Temperature",
+        "date": "Date",
+        "time": "Time"
     }
     
     # Rename the columns
@@ -142,7 +140,7 @@ def rename_columns(df):
 
 def transform_data(df):
     """ Formats the data to create visualizations """
-    df['datetime'] = df['date'] + ' ' + df['time']
+    df['datetime'] = df['Date'] + ' ' + df['Time']
     df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
     return df
 
@@ -181,14 +179,6 @@ def show_window():
 
 
 # -- HOME PAGE --
-# st.title("Get Started")
-# st.markdown(
-#     """
-#     <h1 style='color:#81c784;'>Welcome to AgriMonitor 🌱</h1>
-#     """,
-#     unsafe_allow_html=True
-# )
-
 st.title("Welcome to AgriMonitor 🌱")
 st.write("\n")
 st.write("""
@@ -207,17 +197,9 @@ st.write("""
 st.write("\n")
 
 st.subheader("Get Started")
-# st.markdown(
-#     """
-#     <h1 style='color:#81c784;'>Get Started</h1>
-#     """,
-#     unsafe_allow_html=True
-# )
-
 st.write("""
 To begin, upload your sensor dataset. Once your file is validated, explore the various analysis options under the 'Dashboard' section.
 """)
-
 
 # Button to open the file upload dialog
 if st.button("Upload Data"):

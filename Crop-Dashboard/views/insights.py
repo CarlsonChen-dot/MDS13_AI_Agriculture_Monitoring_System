@@ -286,7 +286,7 @@ st.write("Get insights on your soil data now using the following features")
 col1, col2, col3 = st.columns(3)
 with col1: 
     st.image('assets/rec.jpg')
-    st.subheader("Crop Recommendation Tool")
+    st.subheader("Crop Recommender")
     st.divider()
     st.write("Discover the best crops to grow based on your soil data. Our machine learning algorithm will analyze your specific conditions to provide optimal crop recommendations.")
     if st.button("Get Recommendation"):

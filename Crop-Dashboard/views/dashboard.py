@@ -8,34 +8,28 @@ import altair as alt
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}<style>', unsafe_allow_html=True)
 
-# -- FUNCTIONS --
-def transform_data(file):
-    """ Formats the data to create visualizations """
-    df = pd.read_csv(file)
-    df['datetime'] = df['date'] + ' ' + df['time']
-    df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
-    return df
-
 def display_metrics(filtered_df, metric_placeholder):
     """ Displays metrics (average values) of all parameters for the filtered data """
     avg_n = round(filtered_df['N'].mean())
     avg_p = round(filtered_df['P'].mean())
     avg_k = round(filtered_df['K'].mean())
-    avg_temp = round(filtered_df['Temp'].mean())
-    avg_humi = round(filtered_df['Humi'].mean())
+    avg_temp = round(filtered_df['Temperature'].mean())
+    avg_humi = round(filtered_df['Humidity'].mean())
+    avg_ec = round(filtered_df['EC'].mean())
+    avg_ph = round(filtered_df['PH'].mean())
 
     with metric_placeholder:
         met1, met2, met3, met4, met5 = st.columns(5)
         with met1.container():
-            st.markdown(f'<p class="n_text metrics">Nitrogen (N)<br></p><p class="avg">{avg_n} mg/L</p>', unsafe_allow_html = True)
+            st.markdown(f'<p class="metrics">Nitrogen (N)<br></p><p class="avg">{avg_n} mg/L</p>', unsafe_allow_html = True)
         with met2.container():
-            st.markdown(f'<p class="p_text metrics">Phosphorus (P)<br></p><p class="avg">{avg_p} mg/L</p>', unsafe_allow_html = True)
+            st.markdown(f'<p class="metrics">Phosphorus (P)<br></p><p class="avg">{avg_p} mg/L</p>', unsafe_allow_html = True)
         with met3.container():
-            st.markdown(f'<p class="k_text metrics">Potassium (K)<br></p><p class="avg">{avg_k} mg/L</p>', unsafe_allow_html = True)
+            st.markdown(f'<p class="metrics">Potassium (K)<br></p><p class="avg">{avg_k} mg/L</p>', unsafe_allow_html = True)
         with met4.container():
-            st.markdown(f'<p class="temp_text metrics">Temperature <br></p><p class="avg">{avg_temp} °C</p>', unsafe_allow_html = True)
+            st.markdown(f'<p class="metrics">Temperature <br></p><p class="avg">{avg_temp} °C</p>', unsafe_allow_html = True)
         with met5.container():
-            st.markdown(f'<p class="humi_text metrics">Humidity <br></p><p class="avg">{avg_humi} %</p>', unsafe_allow_html = True)
+            st.markdown(f'<p class="metrics">Humidity <br></p><p class="avg">{avg_humi} %</p>', unsafe_allow_html = True)
 
 def filter(df):
     """Creates a filter for the visualisations. Visualisations and metrics change according to the filters"""
@@ -48,7 +42,7 @@ def filter(df):
     # Filter options
     selected_feature = st.selectbox(
         "Features",
-        ("NPK", "Temperature", "Humidity")
+        ("NPK", "Temperature", "Humidity", "PH", "EC")
     )
     start_date = st.date_input('Start date', min_value=min_date, max_value=max_date, value=min_date)
     end_date = st.date_input('End date', min_value=min_date, max_value=max_date, value=max_date)
@@ -61,29 +55,28 @@ def filter(df):
 def display_timegraph(filtered_df, selected_feature):
     """ Display the time series graph of the selected parameter against time """
 
-    param_map = {
-        "NPK": ['N', 'P', "K"],
-        "Temperature": "Temp",
-        "Humidity": "Humi"
-    }
+    param = selected_feature
+    if selected_feature == "NPK":
+        param = ['N', 'P', "K"]
 
     custom_hover_text = {
         "NPK": {
-            'N': 'Nitrogen (N)', 
-            'P': 'Phosphorus (P)', 
-            'K': 'Potassium (K)'
+            'N': 'Nitrogen (mg/L)', 
+            'P': 'Phosphorus (mg/L)', 
+            'K': 'Potassium (mg/L)'
         },
         "Temperature": 'Temperature (°C)',
-        "Humidity": 'Humidity (%)'
+        "Humidity": 'Humidity (%)',
+        "PH": 'pH Level',
+        "EC": 'Electrical Conductivity (uS/cm)'
     }
 
     # Time series graph
-    param = param_map[selected_feature]
     if selected_feature == "NPK":
         # For NPK, display all three (N, P, K) with labels
         time_fig = px.line(
             filtered_df, x='datetime', 
-            y=param,  # Plot N, P, and K together
+            y= param,  # Plot N, P, and K together
             title=f'Soil {selected_feature} Levels Over Time', 
             template="plotly_dark",
             line_shape="spline"
@@ -150,8 +143,8 @@ def display_timegraph(filtered_df, selected_feature):
         title_font_size=20,  
         plot_bgcolor='#26282E',   
         font=dict(
-            color="#f6f6f6",  # Customize font color
-            size=14  # Font size for labels
+            color="#f6f6f6",  
+            size=14  
         )
     )
     
@@ -171,10 +164,15 @@ def display_donut_chart(df):
         'Percentage': [npk_sums['N'] / total_npk * 100, npk_sums['P'] / total_npk * 100, npk_sums['K'] / total_npk * 100]
     })
 
+    # Define specific colors for each nutrient
+    nutrient_colors = {'N': '#6973FC',  
+                       'P': '#E4573B',  # Orange
+                       'K': '#48CA95'}  # Green
+
     # Create the donut chart using Altair
     chart = alt.Chart(npk_df).mark_arc(innerRadius=30).encode(
         theta=alt.Theta(field="Value", type="quantitative"),
-        color=alt.Color(field="Nutrient", type="nominal"),
+        color=alt.Color(field="Nutrient", type="nominal", scale=alt.Scale(domain=list(nutrient_colors.keys()), range=list(nutrient_colors.values()))),
         tooltip=[alt.Tooltip('Nutrient:N', title='Nutrient Type'), 
                  alt.Tooltip('Percentage:Q', title='Percentage (%)', format='.2f')]
         
@@ -195,63 +193,85 @@ def display_scatterplot(df, x):
     """ Display a scatter plot of the selected features """
 
     against_map ={
-        "NPK":["Temp","Humi", "Temperature", "Humidity", ['N', 'P', 'K']],
-        "Temperature": ["Humi",['N', 'P', 'K'], "Humidity", "NPK","Temp"],
-        "Humidity":["Temp", ['N', 'P', 'K'], "Temperature", "NPK","Humi"] 
+        "NPK":["Temperature","Humidity", "PH", "EC"],
+        "Temperature": [['N', 'P', 'K'], "Humidity", "PH", "EC"],
+        "Humidity":[['N', 'P', 'K'], "Temperature", "PH", "EC"],
+        "PH":[['N', 'P', 'K'], "Temperature","Humidity","EC"],
+        "EC":[['N', 'P', 'K'], "Temperature","Humidity","PH"]
     }
 
-    # Create a scatter plot using Plotly
-    fig1 = px.scatter(df, x=against_map[x][4], y=against_map[x][0], title=f'{x} vs {against_map[x][2]}')
-    fig2 = px.scatter(df, x=against_map[x][4], y=against_map[x][1], title=f'{x} vs {against_map[x][3]}')
-    
+    param = x
     if x == "NPK":
-        # Customize hover labels for the scatter plot
-        fig1.update_traces(
-            hovertemplate=(
-                "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
-                f"<b>{against_map[x][2]}:</b>" 
-                "%{y:.2f}<br>" +  # Display the y value (y-axis)
-                "<extra></extra>"
-            )
-        )
-
-        fig2.update_traces(
-            hovertemplate=(
-                "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
-                f"<b>{against_map[x][3]}:</b>" 
-                "%{y:.2f}<br>" +  # Display the y value (y-axis)
-                "<extra></extra>"
-            )
-        )
+        param = ['N', 'P', "K"]
+        against = "Temperature"
     else:
-        # Customize hover labels for the scatter plot
-        fig1.update_traces(
-            hovertemplate=(
-                f"<b>{x}: </b>"
-                "%{x}<br>" +  # Display the x value (x-axis)
-                f"<b>{against_map[x][2]}: </b>" 
-                "%{y:.2f}<br>" +  # Display the y value (y-axis)
-                "<extra></extra>"
-            )
-        )
+        against = "NPK"
 
-        fig2.update_traces(
-            hovertemplate=(
-                f"<b>{x}: </b>" 
-                "%{x}<br>" +  # Display the x value (x-axis)
-                "Nutrient value: %{y:.2f}<br>" +  # Display the y value (y-axis)
-                "<extra></extra>"
-            )
-        )
+    # Create a scatter plot using Plotly
+    fig1 = px.scatter(df, x=param, y=against_map[x][0], title=f'{x} vs {against}')
+    fig2 = px.scatter(df, x=param, y=against_map[x][1], title=f'{x} vs {against_map[x][1]}')
+    fig3 = px.scatter(df, x=param, y=against_map[x][2], title=f'{x} vs {against_map[x][2]}')
+    fig4 = px.scatter(df, x=param, y=against_map[x][3], title=f'{x} vs {against_map[x][3]}')
 
-    # Update layout to adjust aesthetics
+    # if x == "NPK":
+    #     # Customize hover labels for the scatter plot
+    #     fig1.update_traces(
+    #         hovertemplate=(
+    #             "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
+    #             f"<b>{against_map[x][2]}:</b>" 
+    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
+    #             "<extra></extra>"
+    #         )
+    #     )
+    #     fig2.update_traces(
+    #         hovertemplate=(
+    #             "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
+    #             f"<b>{against_map[x][3]}:</b>" 
+    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
+    #             "<extra></extra>"
+    #         )
+    #     )
+    # else:
+    #     # Customize hover labels for the scatter plot
+    #     fig1.update_traces(
+    #         hovertemplate=(
+    #             f"<b>{x}: </b>"
+    #             "%{x}<br>" +  # Display the x value (x-axis)
+    #             f"<b>{against_map[x][2]}: </b>" 
+    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
+    #             "<extra></extra>"
+    #         )
+    #     )
+
+    #     fig2.update_traces(
+    #         hovertemplate=(
+    #             f"<b>{x}: </b>" 
+    #             "%{x}<br>" +  # Display the x value (x-axis)
+    #             "Nutrient value: %{y:.2f}<br>" +  # Display the y value (y-axis)
+    #             "<extra></extra>"
+    #         )
+    #     )
+
+    #  Update layout to adjust aesthetics
     fig1.update_layout(
+        xaxis_title=x,   
+        yaxis_title=against,  
+        width=100,       
+        height=400      
+    )
+    fig2.update_layout(
+        xaxis_title=x,  
+        yaxis_title=against_map[x][1],   
+        width=100,       
+        height=400       
+    )
+    fig3.update_layout(
         xaxis_title=x,   
         yaxis_title=against_map[x][2],  
         width=100,       
         height=400      
     )
-    fig2.update_layout(
+    fig4.update_layout(
         xaxis_title=x,  
         yaxis_title=against_map[x][3],   
         width=100,       
@@ -261,15 +281,14 @@ def display_scatterplot(df, x):
     # Display the scatter plot in Streamlit
     st.plotly_chart(fig1, use_container_width=True)
     st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig4, use_container_width=True)
     
 def display_boxplot(df, selected_feature):
     """ Display a box plot of the selected_feature """
-
-    param_map = {
-        "NPK": ['N', 'P', 'K'],
-        "Temperature": "Temp",
-        "Humidity": "Humi"
-    }
+    param = selected_feature
+    if selected_feature == "NPK":
+        param = ['N', 'P', "K"]
 
     custom_hover_text = {
         "NPK": {
@@ -278,7 +297,9 @@ def display_boxplot(df, selected_feature):
             'K': 'Potassium (K)'
         },
         "Temperature": 'Temperature (°C)',
-        "Humidity": 'Humidity (%)'
+        "Humidity": 'Humidity (%)',
+        "PH": 'pH Level',
+        "EC": 'Electrical Conductivity (uS/cm)'
     }
 
     # Initialize the Plotly figure object
@@ -286,7 +307,7 @@ def display_boxplot(df, selected_feature):
 
     # If NPK is selected, plot all three (N, P, K) together
     if selected_feature == "NPK":
-        for nutrient in param_map["NPK"]:
+        for nutrient in ['N', 'P', "K"]:
             # Calculate boxplot statistics manually using pandas
             q1 = df[nutrient].quantile(0.25)
             q3 = df[nutrient].quantile(0.75)
@@ -321,12 +342,12 @@ def display_boxplot(df, selected_feature):
 
     else:
         # For Temperature or Humidity, plot a single boxplot
-        q1 = df[param_map[selected_feature]].quantile(0.25)
-        q3 = df[param_map[selected_feature]].quantile(0.75)
-        median = df[param_map[selected_feature]].median()
-        min_val = df[param_map[selected_feature]].min()
-        max_val = df[param_map[selected_feature]].max()
-        mean_val = df[param_map[selected_feature]].mean()
+        q1 = df[param].quantile(0.25)
+        q3 = df[param].quantile(0.75)
+        median = df[param].median()
+        min_val = df[param].min()
+        max_val = df[param].max()
+        mean_val = df[param].mean()
         iqr = q3 - q1
         upper_fence = q3 + 1.5 * iqr
         lower_fence = q1 - 1.5 * iqr
@@ -334,7 +355,7 @@ def display_boxplot(df, selected_feature):
             lower_fence = min_val
 
         fig.add_trace(go.Box(
-            y=df[param_map[selected_feature]],
+            y=df[param],
             name=custom_hover_text[selected_feature],  # Custom label (e.g., Temperature (°C))
             boxmean=True,  # Display mean value as well
             hovertemplate=(
@@ -364,16 +385,11 @@ def display_boxplot(df, selected_feature):
     st.plotly_chart(fig, use_container_width=True)
 
 # -- DASHBOARD PAGE --
-
-
 st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
 tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
 
-
 if 'uploaded_df' in st.session_state:
     df = st.session_state['uploaded_df']  # Get the uploaded DataFrame
-    # Load and transform data
-    df = transform_data('views/out_sensor.csv')
 
     # -- ANALYTICS TAB --
     with tab1:
@@ -392,93 +408,103 @@ if 'uploaded_df' in st.session_state:
 
     # -- DATA OVERVIEW TAB --
     with tab2:
-        display_df = st.empty()
+        st.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df)} 🌱</p>', unsafe_allow_html = True)
+        cols = st.columns((4,1), gap="medium")
+        with cols[0].container():
+            df2 = df.drop(columns=['datetime'])
+            st.dataframe(df2, use_container_width=True)
 
-        # If filtered_df is not in session_state, initialize it with the original filtered_df
-        if 'filtered_df' not in st.session_state:
-            st.session_state.filtered_df = filtered_df.copy()  # Store the unfiltered DataFrame initially
-            st.session_state.filtered_df_copy = filtered_df.copy()  # Backup for reset
+        with cols[1]:
+            st.markdown(f'<p class="params_text">Parameter Filters', unsafe_allow_html = True)
+            st.divider()
 
-        # Display the current DataFrame (filtered or original)
-        display_df.write(st.session_state.filtered_df)
+        # display_df = st.empty()
 
-        # Convert date and time to datetime format
-        st.session_state.filtered_df['date'] = pd.to_datetime(st.session_state.filtered_df['date'], format='%d/%m/%Y').dt.date
-        st.session_state.filtered_df['time'] = pd.to_datetime(st.session_state.filtered_df['time'], format='%H:%M:%S').dt.time
+        # # If filtered_df is not in session_state, initialize it with the original filtered_df
+        # if 'filtered_df' not in st.session_state:
+        #     st.session_state.filtered_df = filtered_df.copy()  # Store the unfiltered DataFrame initially
+        #     st.session_state.filtered_df_copy = filtered_df.copy()  # Backup for reset
 
-        # Define the list of attributes that users can choose from
-        attributes = st.session_state.filtered_df.columns[:-1].tolist()  # Exclude the last column
+        # # Display the current DataFrame (filtered or original)
+        # display_df.write(st.session_state.filtered_df)
 
-        # Create a mapping for nicer display names
-        attribute_display_names = {
-            'N': 'Nitrogen (N)',
-            'P': 'Phosphorus (P)',
-            'K': 'Potassium (K)',
-            'Temp': 'Temperature',
-            'Humi': 'Humidity',
-            'date': 'Date',
-            'time': 'Time',
-            'EC': 'Electrical Conductivity',
-            'PH': 'pH Level'
-        }
+        # # Convert date and time to datetime format
+        # st.session_state.filtered_df['date'] = pd.to_datetime(st.session_state.filtered_df['date'], format='%d/%m/%Y').dt.date
+        # st.session_state.filtered_df['time'] = pd.to_datetime(st.session_state.filtered_df['time'], format='%H:%M:%S').dt.time
+
+        # # Define the list of attributes that users can choose from
+        # attributes = st.session_state.filtered_df.columns[:-1].tolist()  # Exclude the last column
+
+        # # Create a mapping for nicer display names
+        # attribute_display_names = {
+        #     'N': 'Nitrogen (N)',
+        #     'P': 'Phosphorus (P)',
+        #     'K': 'Potassium (K)',
+        #     'Temperature': 'Temperature',
+        #     'Humidity': 'Humidity',
+        #     'date': 'Date',
+        #     'time': 'Time',
+        #     'EC': 'Electrical Conductivity',
+        #     'PH': 'pH Level'
+        # }
         
-        # Create a dropdown to select the attribute for filtering
-        selected_attribute = st.selectbox("Select an attribute to filter", attributes, format_func=lambda x: attribute_display_names[x])
+        # # Create a dropdown to select the attribute for filtering
+        # selected_attribute = st.selectbox("Select an attribute to filter", attributes, format_func=lambda x: attribute_display_names[x])
 
-        if selected_attribute == 'date':
-            date_range = st.date_input(
-                "Select a date range:",
-                min_value=st.session_state.filtered_df['date'].min(),
-                max_value=st.session_state.filtered_df['date'].max(),
-                value=(st.session_state.filtered_df['date'].min(), st.session_state.filtered_df['date'].max())
-            )
+        # if selected_attribute == 'date':
+        #     date_range = st.date_input(
+        #         "Select a date range:",
+        #         min_value=st.session_state.filtered_df['date'].min(),
+        #         max_value=st.session_state.filtered_df['date'].max(),
+        #         value=(st.session_state.filtered_df['date'].min(), st.session_state.filtered_df['date'].max())
+        #     )
 
-            if st.button("Submit Filter"):
-                # Apply the date filter and update the session state
-                start_date, end_date = date_range
-                st.session_state.filtered_df = st.session_state.filtered_df[
-                    (st.session_state.filtered_df['date'] >= start_date) & (st.session_state.filtered_df['date'] <= end_date)
-                ]
-                display_df.write(st.session_state.filtered_df)  # Update the display
+        #     if st.button("Submit Filter"):
+        #         # Apply the date filter and update the session state
+        #         start_date, end_date = date_range
+        #         st.session_state.filtered_df = st.session_state.filtered_df[
+        #             (st.session_state.filtered_df['date'] >= start_date) & (st.session_state.filtered_df['date'] <= end_date)
+        #         ]
+        #         display_df.write(st.session_state.filtered_df)  # Update the display
 
-        elif selected_attribute == 'time':
-            start_time, end_time = st.slider(
-                "Select a time range:",
-                value=(st.session_state.filtered_df['time'].min(), st.session_state.filtered_df['time'].max()),
-                format="HH:mm:ss"
-            )
+        # elif selected_attribute == 'time':
+        #     start_time, end_time = st.slider(
+        #         "Select a time range:",
+        #         value=(st.session_state.filtered_df['time'].min(), st.session_state.filtered_df['time'].max()),
+        #         format="HH:mm:ss"
+        #     )
 
-            if st.button("Submit Filter"):
-                # Apply the time filter and update the session state
-                st.session_state.filtered_df = st.session_state.filtered_df[
-                    (st.session_state.filtered_df['time'] >= start_time) & (st.session_state.filtered_df['time'] <= end_time)
-                ]
-                display_df.write(st.session_state.filtered_df)  # Update the display
+        #     if st.button("Submit Filter"):
+        #         # Apply the time filter and update the session state
+        #         st.session_state.filtered_df = st.session_state.filtered_df[
+        #             (st.session_state.filtered_df['time'] >= start_time) & (st.session_state.filtered_df['time'] <= end_time)
+        #         ]
+        #         display_df.write(st.session_state.filtered_df)  # Update the display
 
-        else:
-            # Create a slider for numeric attributes
-            min_value, max_value = st.slider(
-                f"Select a range for {attribute_display_names[selected_attribute]} values:",
-                min_value=float(st.session_state.filtered_df[selected_attribute].min()),
-                max_value=float(st.session_state.filtered_df[selected_attribute].max()),
-                value=(float(st.session_state.filtered_df[selected_attribute].min()), float(st.session_state.filtered_df[selected_attribute].max()))
-            )
+        # else:
+        #     # Create a slider for numeric attributes
+        #     min_value, max_value = st.slider(
+        #         f"Select a range for {attribute_display_names[selected_attribute]} values:",
+        #         min_value=float(st.session_state.filtered_df[selected_attribute].min()),
+        #         max_value=float(st.session_state.filtered_df[selected_attribute].max()),
+        #         value=(float(st.session_state.filtered_df[selected_attribute].min()), float(st.session_state.filtered_df[selected_attribute].max()))
+        #     )
 
-            if st.button("Submit Filter"):
-                # Apply the numeric filter and update the session state
-                st.session_state.filtered_df = st.session_state.filtered_df[
-                    (st.session_state.filtered_df[selected_attribute] >= min_value) & (st.session_state.filtered_df[selected_attribute] <= max_value)
-                ]
-                display_df.write(st.session_state.filtered_df)  # Update the display
+        #     if st.button("Submit Filter"):
+        #         # Apply the numeric filter and update the session state
+        #         st.session_state.filtered_df = st.session_state.filtered_df[
+        #             (st.session_state.filtered_df[selected_attribute] >= min_value) & (st.session_state.filtered_df[selected_attribute] <= max_value)
+        #         ]
+        #         display_df.write(st.session_state.filtered_df)  # Update the display
 
-        # Add a Reset button to reset the DataFrame to its original state
-        if st.button("Reset Filter"):
-            st.session_state.filtered_df = st.session_state.filtered_df_copy.copy()  # Reset to the original DataFrame
-            display_df.write(st.session_state.filtered_df)  # Update the display
+        # # Add a Reset button to reset the DataFrame to its original state
+        # if st.button("Reset Filter"):
+        #     st.session_state.filtered_df = st.session_state.filtered_df_copy.copy()  # Reset to the original DataFrame
+        #     display_df.write(st.session_state.filtered_df)  # Update the display
 
     # -- ADVANCED ANALYTICS TAB --
     with tab3:
-        st.caption("Analytics based on selected parameters:")
+        st.caption("Analytics based on selected dataset:")
         st.success(selected_feature)
         cols = st.columns(2, gap="medium")
         with cols[0]:
@@ -487,7 +513,7 @@ if 'uploaded_df' in st.session_state:
 
         with cols[1]:
             # Calculate correlation matrix
-            corr_matrix = filtered_df.drop(columns=['datetime','date','time']).corr()
+            corr_matrix = filtered_df.drop(columns=['datetime','Date','Time']).corr()
 
             # Create a heatmap using Plotly
             fig = px.imshow(corr_matrix, 
@@ -510,4 +536,4 @@ if 'uploaded_df' in st.session_state:
 
         display_scatterplot(filtered_df, selected_feature)
 else:
-    st.write("Please upload a CSV file to proceed.")
+    st.write("Please upload a CSV file in the Home page to proceed.")

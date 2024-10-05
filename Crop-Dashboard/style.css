@@ -37,7 +37,7 @@ div.st-emotion-cache-j5r0tf.e1f1d6gn3{
     padding-bottom: 0px;
 }
 
-.avg {
+.avg, .records{
     font-size: 20px; 
     color:#f6f6f6;
     font-weight: 900;
@@ -46,7 +46,7 @@ div.st-emotion-cache-j5r0tf.e1f1d6gn3{
     padding-bottom: 10px;
 }
 
-.metrics {
+.metrics, .records_text{
     font-size: 14px; 
     font-weight: bold;
     text-align: left;
@@ -96,26 +96,35 @@ div.st-emotion-cache-el1bu4.e1f1d6gn3{
     padding-top: 0px;
 }
 
-/* Adjust the size of the selectbox */
-div[data-baseweb="select"] {
-    width: 50% !important;
+/* Data overview filter border */
+div.st-emotion-cache-1qz96h7.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 0px 20px 10px 20px;
+    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
+    border: 1px groove #26282E;
 }
+
+
+/* Adjust the size of the selectbox */
+/* div[data-baseweb="select"] {
+    width: 50% !important;
+} */
 
 /* Adjust the size of the slider */
-.stSlider {
+/* .stSlider {
     width: 50% !important;
-}
+} */
 
 /* Adjust the size of the date input */
-.stDateInput {
+/* .stDateInput {
     width: 50% !important; 
-}
+} */
 
 /* Adjust the size of the buttons */
-div.stButton > button {
+/* div.stButton > button {
     width: 150px;
     height: 40px;  
-}
+} */
 
 
 
