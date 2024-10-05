@@ -213,6 +213,61 @@ def display_scatterplot(df, x):
     fig3 = px.scatter(df, x=param, y=against_map[x][2], title=f'{x} vs {against_map[x][2]}')
     fig4 = px.scatter(df, x=param, y=against_map[x][3], title=f'{x} vs {against_map[x][3]}')
 
+    # Custom tooltips
+    if x == "NPK":
+        fig1.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +
+                f"<b>{against_map[x][0]}: </b>" + "%{y:.2f}<br>" + 
+                "<extra></extra>"
+            )
+        )
+        fig2.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +
+                f"<b>{against_map[x][1]}: </b>" + "%{y:.2f}<br>" + 
+                "<extra></extra>"
+            )
+        )
+        fig3.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +
+                f"<b>{against_map[x][2]}: </b>" + "%{y:.2f}<br>" + 
+                "<extra></extra>"
+            )
+        )
+        fig4.update_traces(
+            hovertemplate=(
+                "<b>Nutrient value:</b> %{x}<br>" +
+                f"<b>{against_map[x][3]}: </b>" + "%{y:.2f}<br>" + 
+                "<extra></extra>"
+            )
+        )
+    else:
+        # Customize hovertemplate for y-axis with Nutrients (N, P, K)
+        for fig, y_feature in zip([fig1, fig2, fig3, fig4], against_map[x]):
+            if y_feature == ['N', 'P', 'K']:
+                fig.update_traces(
+                    hovertemplate=(
+                        f"<b>{x}: </b>"
+                        "%{x}<br>" +
+                        "<b>Nutrient value:</b> %{y:.2f}<br>" +  # Display y as nutrient value
+                        #f"<b>{x}:</b> %{x}<br>" +
+                        "<extra></extra>"
+                    )
+                )
+            else:
+                fig.update_traces(
+                    hovertemplate=(
+                        f"<b>{x}: </b>"
+                        "%{x}<br>" +
+                        f"<b>{y_feature}: </b>"
+                        "%{y:.2f}<br>" +
+                        "<extra></extra>"
+                    )
+                )
+
+
     # if x == "NPK":
     #     # Customize hover labels for the scatter plot
     #     fig1.update_traces(
