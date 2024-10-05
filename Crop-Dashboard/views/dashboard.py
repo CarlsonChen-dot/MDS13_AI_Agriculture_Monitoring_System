@@ -408,99 +408,126 @@ if 'uploaded_df' in st.session_state:
 
     # -- DATA OVERVIEW TAB --
     with tab2:
-        st.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df)} 🌱</p>', unsafe_allow_html = True)
-        cols = st.columns((4,1), gap="medium")
+        # Placeholder for displaying the total number of records dynamically
+        records_placeholder = st.empty()
+        records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(st.session_state.get("df2_filtered", df))} 🌱</p>', unsafe_allow_html=True)
+
+        cols = st.columns((4, 1), gap="medium")
+
         with cols[0].container():
-            df2 = df.drop(columns=['datetime'])
-            st.dataframe(df2, use_container_width=True)
+            df_placeholder = st.empty()
+
+            # Use the filtered DataFrame in session_state if available, otherwise use the original df2
+            df2 = df.drop(columns=['datetime'])  # Different DataFrame for tab2
+            df2_filtered = st.session_state.get('df2_filtered', df2)  # Default to df2 if no filtered DataFrame is set
+            df_placeholder.dataframe(df2_filtered, use_container_width=True)
 
         with cols[1]:
-            st.markdown(f'<p class="params_text">Parameter Filters', unsafe_allow_html = True)
+            st.markdown(f'<p class="params_text">Parameter Filters</p>', unsafe_allow_html=True)
             st.divider()
 
-        # display_df = st.empty()
+            # If df2_filtered is not in session_state, initialize it with the original df2
+            if 'df2_filtered' not in st.session_state:
+                st.session_state.df2_filtered = df2.copy()  # Store the unfiltered DataFrame for tab2
+                st.session_state.df2_filtered_copy = df2.copy()  # Backup for reset
 
-        # # If filtered_df is not in session_state, initialize it with the original filtered_df
-        # if 'filtered_df' not in st.session_state:
-        #     st.session_state.filtered_df = filtered_df.copy()  # Store the unfiltered DataFrame initially
-        #     st.session_state.filtered_df_copy = filtered_df.copy()  # Backup for reset
+            # Convert date and time to datetime format
+            df2['Date'] = pd.to_datetime(df2['Date'], format='%d/%m/%Y').dt.date
+            df2['Time'] = pd.to_datetime(df2['Time'], format='%H:%M:%S').dt.time
 
-        # # Display the current DataFrame (filtered or original)
-        # display_df.write(st.session_state.filtered_df)
+            # Capture slider inputs but don't apply filtering immediately
+            # Date filter
+            date_range = st.date_input(
+                "Select a date range:",
+                min_value=df2['Date'].min(),
+                max_value=df2['Date'].max(),
+                value=(df2['Date'].min(), df2['Date'].max())
+            )
 
-        # # Convert date and time to datetime format
-        # st.session_state.filtered_df['date'] = pd.to_datetime(st.session_state.filtered_df['date'], format='%d/%m/%Y').dt.date
-        # st.session_state.filtered_df['time'] = pd.to_datetime(st.session_state.filtered_df['time'], format='%H:%M:%S').dt.time
+            # Time filter
+            start_time, end_time = st.slider(
+                "Select a time range:",
+                value=(df2['Time'].min(), df2['Time'].max()),
+                format="HH:mm:ss"
+            )
 
-        # # Define the list of attributes that users can choose from
-        # attributes = st.session_state.filtered_df.columns[:-1].tolist()  # Exclude the last column
+            # Numeric filters
+            N_min, N_max = st.slider(
+                "Nitrogen (N) Range",
+                min_value=float(df2['N'].min()), 
+                max_value=float(df2['N'].max()), 
+                value=(float(df2['N'].min()), float(df2['N'].max()))
+            )
 
-        # # Create a mapping for nicer display names
-        # attribute_display_names = {
-        #     'N': 'Nitrogen (N)',
-        #     'P': 'Phosphorus (P)',
-        #     'K': 'Potassium (K)',
-        #     'Temperature': 'Temperature',
-        #     'Humidity': 'Humidity',
-        #     'date': 'Date',
-        #     'time': 'Time',
-        #     'EC': 'Electrical Conductivity',
-        #     'PH': 'pH Level'
-        # }
-        
-        # # Create a dropdown to select the attribute for filtering
-        # selected_attribute = st.selectbox("Select an attribute to filter", attributes, format_func=lambda x: attribute_display_names[x])
+            P_min, P_max = st.slider(
+                "Phosphorus (P) Range",
+                min_value=float(df2['P'].min()), 
+                max_value=float(df2['P'].max()), 
+                value=(float(df2['P'].min()), float(df2['P'].max()))
+            )
 
-        # if selected_attribute == 'date':
-        #     date_range = st.date_input(
-        #         "Select a date range:",
-        #         min_value=st.session_state.filtered_df['date'].min(),
-        #         max_value=st.session_state.filtered_df['date'].max(),
-        #         value=(st.session_state.filtered_df['date'].min(), st.session_state.filtered_df['date'].max())
-        #     )
+            K_min, K_max = st.slider(
+                "Potassium (K) Range",
+                min_value=float(df2['K'].min()), 
+                max_value=float(df2['K'].max()), 
+                value=(float(df2['K'].min()), float(df2['K'].max()))
+            )
 
-        #     if st.button("Submit Filter"):
-        #         # Apply the date filter and update the session state
-        #         start_date, end_date = date_range
-        #         st.session_state.filtered_df = st.session_state.filtered_df[
-        #             (st.session_state.filtered_df['date'] >= start_date) & (st.session_state.filtered_df['date'] <= end_date)
-        #         ]
-        #         display_df.write(st.session_state.filtered_df)  # Update the display
+            Temp_min, Temp_max = st.slider(
+                "Temperature Range",
+                min_value=float(df2['Temperature'].min()), 
+                max_value=float(df2['Temperature'].max()), 
+                value=(float(df2['Temperature'].min()), float(df2['Temperature'].max()))
+            )
 
-        # elif selected_attribute == 'time':
-        #     start_time, end_time = st.slider(
-        #         "Select a time range:",
-        #         value=(st.session_state.filtered_df['time'].min(), st.session_state.filtered_df['time'].max()),
-        #         format="HH:mm:ss"
-        #     )
+            Humi_min, Humi_max = st.slider(
+                "Humidity Range",
+                min_value=float(df2['Humidity'].min()), 
+                max_value=float(df2['Humidity'].max()), 
+                value=(float(df2['Humidity'].min()), float(df2['Humidity'].max()))
+            )
 
-        #     if st.button("Submit Filter"):
-        #         # Apply the time filter and update the session state
-        #         st.session_state.filtered_df = st.session_state.filtered_df[
-        #             (st.session_state.filtered_df['time'] >= start_time) & (st.session_state.filtered_df['time'] <= end_time)
-        #         ]
-        #         display_df.write(st.session_state.filtered_df)  # Update the display
+            EC_min, EC_max = st.slider(
+                "Electrical Conductivity Range",
+                min_value=float(df2['EC'].min()), 
+                max_value=float(df2['EC'].max()), 
+                value=(float(df2['EC'].min()), float(df2['EC'].max()))
+            )
 
-        # else:
-        #     # Create a slider for numeric attributes
-        #     min_value, max_value = st.slider(
-        #         f"Select a range for {attribute_display_names[selected_attribute]} values:",
-        #         min_value=float(st.session_state.filtered_df[selected_attribute].min()),
-        #         max_value=float(st.session_state.filtered_df[selected_attribute].max()),
-        #         value=(float(st.session_state.filtered_df[selected_attribute].min()), float(st.session_state.filtered_df[selected_attribute].max()))
-        #     )
+            PH_min, PH_max = st.slider(
+                "pH level Range",
+                min_value=float(df2['PH'].min()), 
+                max_value=float(df2['PH'].max()), 
+                value=(float(df2['PH'].min()), float(df2['PH'].max()))
+            )
 
-        #     if st.button("Submit Filter"):
-        #         # Apply the numeric filter and update the session state
-        #         st.session_state.filtered_df = st.session_state.filtered_df[
-        #             (st.session_state.filtered_df[selected_attribute] >= min_value) & (st.session_state.filtered_df[selected_attribute] <= max_value)
-        #         ]
-        #         display_df.write(st.session_state.filtered_df)  # Update the display
+            # Filtering only happens when the button is pressed
+            if st.button("Submit Filter"):
+                # Apply all filters when the button is pressed
+                df2_filtered = df2[
+                    (df2['Date'] >= date_range[0]) & (df2['Date'] <= date_range[1]) &
+                    (df2['Time'] >= start_time) & (df2['Time'] <= end_time) &
+                    (df2['N'] >= N_min) & (df2['N'] <= N_max) &
+                    (df2['P'] >= P_min) & (df2['P'] <= P_max) &
+                    (df2['K'] >= K_min) & (df2['K'] <= K_max) &
+                    (df2['Temperature'] >= Temp_min) & (df2['Temperature'] <= Temp_max) &
+                    (df2['Humidity'] >= Humi_min) & (df2['Humidity'] <= Humi_max) &
+                    (df2['EC'] >= EC_min) & (df2['EC'] <= EC_max) &
+                    (df2['PH'] >= PH_min) & (df2['PH'] <= PH_max)
+                ]
+                st.session_state.df2_filtered = df2_filtered.copy()  # Update the filtered DataFrame for tab2
+                df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the filtered DataFrame
+                records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>', unsafe_allow_html=True)
 
-        # # Add a Reset button to reset the DataFrame to its original state
-        # if st.button("Reset Filter"):
-        #     st.session_state.filtered_df = st.session_state.filtered_df_copy.copy()  # Reset to the original DataFrame
-        #     display_df.write(st.session_state.filtered_df)  # Update the display
+            # Add a Reset button to reset the DataFrame to its original state
+            if st.button("Reset Filter"):
+                st.session_state.df2_filtered = st.session_state.df2_filtered_copy.copy()  # Reset to the original DataFrame
+                df2_filtered = st.session_state.df2_filtered  # Update the filtered DataFrame for tab2
+                df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the original DataFrame
+                records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>', unsafe_allow_html=True)
+
+                
+
 
     # -- ADVANCED ANALYTICS TAB --
     with tab3:
