@@ -277,7 +277,7 @@ def crop_yield_prediction():
         # Make the prediction
         prediction = yield_model.predict(input_data_scaled)
 
-        st.success(f"Predicted Yield: {prediction[0]}")
+        st.success(f"Predicted Yield: {prediction[0]:.2f} kg/ha")
 
 # -- INSIGHTS PAGE --
 st.title("Crop Insights")
