@@ -1,3 +1,41 @@
+
+# import streamlit as st
+# import pandas as pd
+
+# # -- FUNCTIONS --
+# # Check file validation 
+# def is_valid(file):
+#     #check
+#     return False
+
+# # File Uploader pop up form
+# @st.dialog("Upload your soil data")
+# def show_file_uploader():
+#     file = st.file_uploader("Only CSV accepted", type=["csv"], accept_multiple_files=False)
+#     st.write("\n")
+#     st.caption("Ensure file uploaded follows the file following format")
+#     df = pd.read_csv('backend/out_sensor.csv')
+#     st.write(df.head())
+#     st.caption("*download to use as template")
+    
+#     if file is not None:
+#         if is_valid(file):
+#             st.success("File successfully uploaded! Proceed to dashboard to get an overview")
+#             df = pd.read_csv(file) # !!! pass this df to dashboard
+#         else:
+#             st.error("File does not meet format requirements") # !!! should not accept
+        
+
+# # -- HOME PAGE --
+# st.title("Welcome to AgriMonitor 🌱")
+# st.write("\n")
+# st.subheader("Lorem ipsum dolor sit amet")
+# st.write("Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+# st.write("\n")
+# if st.button("Import Soil Data"):
+#     show_file_uploader()
+
+
 import streamlit as st  # type: ignore
 import pandas as pd  # type: ignore
 import os
@@ -20,10 +58,6 @@ def is_valid(file):
     for col in expected_columns:
         if col not in columns:
             return False, "Column headers do not match."
-    
-#    # Check if the columns match
-#     if columns != expected_columns:
-#         return False, "Column headers do not match."
     
     # Define expected data types for each column (example: float for sensor readings, str for date/time)
     expected_dtypes = {
@@ -95,7 +129,9 @@ def rename_columns(df):
     # Define the mapping from old column names to new column names
     new_column_names = {
         "Humi": "Humidity",
-        "Temp": "Temperature"
+        "Temp": "Temperature",
+        "date": "Date",
+        "time": "Time"
     }
     
     # Rename the columns
@@ -105,7 +141,7 @@ def rename_columns(df):
 
 def transform_data(df):
     """ Formats the data to create visualizations """
-    df['datetime'] = df['date'] + ' ' + df['time']
+    df['datetime'] = df['Date'] + ' ' + df['Time']
     df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
     return df
 
@@ -144,13 +180,6 @@ def show_window():
 
 
 # -- HOME PAGE --
-# st.title("Get Started")
-# st.markdown(
-#     """
-#     <h1 style='color:#81c784;'>Welcome to AgriMonitor 🌱</h1>
-#     """,
-#     unsafe_allow_html=True
-# )
 
 st.title("Welcome to AgriMonitor 🌱")
 st.write("\n")
@@ -158,6 +187,26 @@ st.write("""
 AgriMonitor is a cutting-edge web application designed by MDS13 to revolutionize agricultural monitoring and management. Our platform leverages advanced technologies to provide insightful analytics, and precise recommendations that empower farmers and agronomists to make informed decisions and maximize crop yield.
          """)
 st.write("\n")
+
+
+# Features Overview
+st.subheader("Key Features")
+st.write("""
+- **File Upload & Validation**: Upload data in CSV format and ensure the file is validated.
+- **Data Analysis Tools**: Perform statistical analysis, anomaly detection, and visualize trends in the data.
+- **Comprehensive Reporting**: Summarize and extract best-value metrics from sensor readings.
+- **Customizable Views**: Choose specific columns or full datasets to focus your analysis on relevant environmental factors.
+""")
+st.write("\n")
+
+st.subheader("Get Started")
+st.write("""
+To begin, upload your sensor dataset. Once your file is validated, explore the various analysis options under the 'Dashboard' section.
+""")
+
+# Button to open the file upload dialog
+if st.button("Upload Data"):
+    show_window()
 
 # Features Overview
 st.subheader("Key Features")
