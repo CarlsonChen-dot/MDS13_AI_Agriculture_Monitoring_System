@@ -427,6 +427,7 @@ def crop_yield_prediction():
 
                     uploaded_df['Predicted_Yield'] = predictions
                     st.write(uploaded_df[['Temperature', 'Humidity', 'N', 'P', 'K', 'Predicted_Yield']])
+                    st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
 
             elif size_valid is False:
                     st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
