@@ -28,7 +28,8 @@ chatbot_page = st.Page(
 pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page])
 
 # -- SHARED ON ALL PAGES --
-st.logo("assets/logo.png")
+logo_file_path = os.path.join(os.path.dirname(__file__), '../assets/logo.png')
+st.image(logo_file_path)
 st.sidebar.text("Made by MDS13")
 
 pg.run()
