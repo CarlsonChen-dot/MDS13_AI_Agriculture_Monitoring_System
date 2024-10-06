@@ -491,9 +491,13 @@ def preprocess_data(df, crop_name, unique_crops):
 st.title("Crop Insights")
 st.write("Get insights on your soil data now using the following features")
 
+image1_file_path = os.path.join(os.path.dirname(__file__), '../assets/rec.jpg')
+image2_file_path = os.path.join(os.path.dirname(__file__), '../assets/yield.png')
+image3_file_path = os.path.join(os.path.dirname(__file__), '../assets/info.png')
+
 col1, col2, col3 = st.columns(3)
 with col1: 
-    st.image('assets/rec.jpg')
+    st.image(image1_file_path)
     st.subheader("Crop Recommender")
     st.divider()
     st.write("Discover the best crops to grow based on your soil data. Our machine learning algorithm will analyze your specific conditions to provide optimal crop recommendations.")
@@ -501,7 +505,7 @@ with col1:
         crop_recommendation_sys()
 
 with col2: 
-    st.image('assets/yield.png')
+    st.image(image2_file_path)
     st.subheader("Crop Yield Predictor")
     st.divider()
     st.write("Accurately forecast your crop yields with machine learning that leverages historical datasets. Optimize your planning and maximize productivity.")
@@ -509,7 +513,7 @@ with col2:
         crop_yield_prediction()
 
 with col3: 
-    st.image('assets/info.png')
+    st.image(image3_file_path)
     st.subheader("Smart Crop Chatbot?")
     st.divider()
     st.write("Get instant answers to your crop-related questions and personalized farming advice. Powered by AI, this chatbot provides insights based on your specific needs.")
