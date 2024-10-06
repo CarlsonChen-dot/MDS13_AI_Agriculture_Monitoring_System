@@ -185,7 +185,7 @@ unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Corian
 
 # --FUNCTIONS --
 # Load the model from the .pkl file
-with open(rfmodel_file_path) as f:
+with open(rfmodel_file_path, 'rb') as f:
     rec_model = pickle.load(f)
 
 def is_valid(file):
