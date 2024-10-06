@@ -1,5 +1,4 @@
 import streamlit as st 
-import os
 
 # -- PAGE SETUP --
 st.set_page_config(page_title="My App",layout='wide')
@@ -29,8 +28,8 @@ chatbot_page = st.Page(
 pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page])
 
 # -- SHARED ON ALL PAGES --
-logo_file_path = os.path.join(os.path.dirname(__file__), '../assets/logo.png')
-st.image(logo_file_path)
+logo_url = "https://i.imgur.com/NYTwH3h.png"
+st.logo(logo_url)
 st.sidebar.text("Made by MDS13")
 
 pg.run()
