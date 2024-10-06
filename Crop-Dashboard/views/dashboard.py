@@ -4,8 +4,10 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import altair as alt
+import os
 
-with open('style.css') as f:
+css_file = os.path.join(os.path.dirname(__file__), '../style.css')
+with open(css_file) as f:
     st.markdown(f'<style>{f.read()}<style>', unsafe_allow_html=True)
 
 def display_metrics(filtered_df, metric_placeholder):
