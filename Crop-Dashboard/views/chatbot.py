@@ -6,7 +6,7 @@ from scipy import stats
 
 
 # List of specific columns user may request
-specific_columns = ["N", "P", "K", "Humidity", "date", "Temperature", "EC", "PH", "time"]
+specific_columns = ["N", "P", "K", "Humidity", "Date", "Temperature", "EC", "PH", "Time"]
 
 z_thresholds = {
     "Humidity": 4,  # A larger threshold for humidity
@@ -355,4 +355,5 @@ if 'uploaded_df' in st.session_state:
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 else:
+
     st.write("Please upload a Soil Data (CSV file) to proceed.")

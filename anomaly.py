@@ -1,29 +1,6 @@
 import pandas as pd
 import os
 
-def validate_file(csv_file):
-    # Check if the file is a CSV
-    if not csv_file.endswith('.csv'):
-        return "Error: The file is not a CSV file."
-    
-    # Check if the file exists
-    if not os.path.exists(csv_file):
-        return "Error: The file does not exist."
-
-    # Open the file and check the headers
-    with open(csv_file, 'r') as file:
-        first_line = file.readline().strip()
-        columns = first_line.split(',')
-        
-        # Expected columns
-        expected_columns = ["date", "time", "Humi", "Temp", "EC", "PH", "N", "P", "K"]
-        
-        # Check if the columns match
-        if columns != expected_columns:
-            return "Error: Column format is incorrect. Expected columns: " + str(expected_columns) + " but " + str(columns) + " instead."
-    
-    return "File validation passed."
-
 def get_values(csv_file, use_median=False):
     # Open the file and skip irrelevant lines to find the correct header
     with open(csv_file, 'r') as file:
