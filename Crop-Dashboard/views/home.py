@@ -208,29 +208,29 @@ To begin, upload your sensor dataset. Once your file is validated, explore the v
 if st.button("Upload Data"):
     show_window()
 
-# Features Overview
-st.subheader("Key Features")
-st.write("""
-- **File Upload & Validation**: Upload data in CSV format and ensure the file is validated.
-- **Data Analysis Tools**: Perform statistical analysis, anomaly detection, and visualize trends in the data.
-- **Comprehensive Reporting**: Summarize and extract best-value metrics from sensor readings.
-- **Customizable Views**: Choose specific columns or full datasets to focus your analysis on relevant environmental factors.
-""")
-st.write("\n")
+# # Features Overview
+# st.subheader("Key Features")
+# st.write("""
+# - **File Upload & Validation**: Upload data in CSV format and ensure the file is validated.
+# - **Data Analysis Tools**: Perform statistical analysis, anomaly detection, and visualize trends in the data.
+# - **Comprehensive Reporting**: Summarize and extract best-value metrics from sensor readings.
+# - **Customizable Views**: Choose specific columns or full datasets to focus your analysis on relevant environmental factors.
+# """)
+# st.write("\n")
 
-st.subheader("Get Started")
-# st.markdown(
-#     """
-#     <h1 style='color:#81c784;'>Get Started</h1>
-#     """,
-#     unsafe_allow_html=True
-# )
+# st.subheader("Get Started")
+# # st.markdown(
+# #     """
+# #     <h1 style='color:#81c784;'>Get Started</h1>
+# #     """,
+# #     unsafe_allow_html=True
+# # )
 
-st.write("""
-To begin, upload your sensor dataset. Once your file is validated, explore the various analysis options under the 'Dashboard' section.
-""")
+# st.write("""
+# To begin, upload your sensor dataset. Once your file is validated, explore the various analysis options under the 'Dashboard' section.
+# """)
 
 
-# Button to open the file upload dialog
-if st.button("Upload Data"):
-    show_window()
+# # Button to open the file upload dialog
+# if st.button("Upload Data"):
+#     show_window()
