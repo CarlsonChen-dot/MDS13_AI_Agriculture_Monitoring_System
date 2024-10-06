@@ -358,8 +358,8 @@ def crop_recommendation_sys():
 
 # with open('backend/best_model.pkl', 'rb') as f:
 #     yield_model = pickle.load(f)
-yield_model = joblib.load('backend/best_model.pkl')
-scaler = joblib.load('backend/scaler.pkl')
+#yield_model = joblib.load('backend/best_model.pkl')
+#scaler = joblib.load('backend/scaler.pkl')
 
 unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
                     'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 
