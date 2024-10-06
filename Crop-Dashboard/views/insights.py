@@ -166,8 +166,10 @@ MAX_FILE_SIZE = 200 * 1024 * 1024
 
 # with open('backend/best_model.pkl', 'rb') as f:
 #     yield_model = pickle.load(f)
-yield_model = joblib.load('backend/best_model.pkl')
-scaler = joblib.load('backend/scaler.pkl')
+model_file_path = os.path.join(os.path.dirname(__file__), '../backend/best_model.pkl')
+scaler_file_path = os.path.join(os.path.dirname(__file__), '../backend/scaler.pkl')
+yield_model = joblib.load(model_file_path)
+scaler = joblib.load(scaler_file_path)
 
 unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
                     'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 

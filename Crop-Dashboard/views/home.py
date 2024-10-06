@@ -113,12 +113,13 @@ def is_valid_size(file):
 
 # File Uploader op up form
 def show_file_uploader():
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../backend/out_sensor.csv')
     file = st.file_uploader("Only CSV accepted", type=["csv"], accept_multiple_files=False)
     
     # Ensure file uploaded follows the file format
     st.write("\n")
     st.caption("Ensure file uploaded follows the file format:")
-    df = pd.read_csv('backend/out_sensor.csv')
+    df = pd.read_csv(csv_file_path)
     st.write(df.head())
     st.caption("*Download to use as template")
     
