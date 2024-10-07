@@ -269,46 +269,6 @@ def display_scatterplot(df, x):
                     )
                 )
 
-
-    # if x == "NPK":
-    #     # Customize hover labels for the scatter plot
-    #     fig1.update_traces(
-    #         hovertemplate=(
-    #             "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
-    #             f"<b>{against_map[x][2]}:</b>" 
-    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
-    #             "<extra></extra>"
-    #         )
-    #     )
-    #     fig2.update_traces(
-    #         hovertemplate=(
-    #             "<b>Nutrient value:</b> %{x}<br>" +  # Display the nutrient (x-axis)
-    #             f"<b>{against_map[x][3]}:</b>" 
-    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
-    #             "<extra></extra>"
-    #         )
-    #     )
-    # else:
-    #     # Customize hover labels for the scatter plot
-    #     fig1.update_traces(
-    #         hovertemplate=(
-    #             f"<b>{x}: </b>"
-    #             "%{x}<br>" +  # Display the x value (x-axis)
-    #             f"<b>{against_map[x][2]}: </b>" 
-    #             "%{y:.2f}<br>" +  # Display the y value (y-axis)
-    #             "<extra></extra>"
-    #         )
-    #     )
-
-    #     fig2.update_traces(
-    #         hovertemplate=(
-    #             f"<b>{x}: </b>" 
-    #             "%{x}<br>" +  # Display the x value (x-axis)
-    #             "Nutrient value: %{y:.2f}<br>" +  # Display the y value (y-axis)
-    #             "<extra></extra>"
-    #         )
-    #     )
-
     #  Update layout to adjust aesthetics
     fig1.update_layout(
         xaxis_title=x,   
@@ -582,9 +542,6 @@ if 'uploaded_df' in st.session_state:
                 df2_filtered = st.session_state.df2_filtered  # Update the filtered DataFrame for tab2
                 df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the original DataFrame
                 records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>', unsafe_allow_html=True)
-
-                
-
 
     # -- ADVANCED ANALYTICS TAB --
     with tab3:

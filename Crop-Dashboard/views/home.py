@@ -1,41 +1,3 @@
-
-# import streamlit as st
-# import pandas as pd
-
-# # -- FUNCTIONS --
-# # Check file validation 
-# def is_valid(file):
-#     #check
-#     return False
-
-# # File Uploader pop up form
-# @st.dialog("Upload your soil data")
-# def show_file_uploader():
-#     file = st.file_uploader("Only CSV accepted", type=["csv"], accept_multiple_files=False)
-#     st.write("\n")
-#     st.caption("Ensure file uploaded follows the file following format")
-#     df = pd.read_csv('backend/out_sensor.csv')
-#     st.write(df.head())
-#     st.caption("*download to use as template")
-    
-#     if file is not None:
-#         if is_valid(file):
-#             st.success("File successfully uploaded! Proceed to dashboard to get an overview")
-#             df = pd.read_csv(file) # !!! pass this df to dashboard
-#         else:
-#             st.error("File does not meet format requirements") # !!! should not accept
-        
-
-# # -- HOME PAGE --
-# st.title("Welcome to AgriMonitor 🌱")
-# st.write("\n")
-# st.subheader("Lorem ipsum dolor sit amet")
-# st.write("Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-# st.write("\n")
-# if st.button("Import Soil Data"):
-#     show_file_uploader()
-
-
 import streamlit as st  # type: ignore
 import pandas as pd  # type: ignore
 import os
@@ -208,30 +170,3 @@ To begin, upload your sensor dataset. Once your file is validated, explore the v
 # Button to open the file upload dialog
 if st.button("Upload Data"):
     show_window()
-
-# # Features Overview
-# st.subheader("Key Features")
-# st.write("""
-# - **File Upload & Validation**: Upload data in CSV format and ensure the file is validated.
-# - **Data Analysis Tools**: Perform statistical analysis, anomaly detection, and visualize trends in the data.
-# - **Comprehensive Reporting**: Summarize and extract best-value metrics from sensor readings.
-# - **Customizable Views**: Choose specific columns or full datasets to focus your analysis on relevant environmental factors.
-# """)
-# st.write("\n")
-
-# st.subheader("Get Started")
-# # st.markdown(
-# #     """
-# #     <h1 style='color:#81c784;'>Get Started</h1>
-# #     """,
-# #     unsafe_allow_html=True
-# # )
-
-# st.write("""
-# To begin, upload your sensor dataset. Once your file is validated, explore the various analysis options under the 'Dashboard' section.
-# """)
-
-
-# # Button to open the file upload dialog
-# if st.button("Upload Data"):
-#     show_window()
