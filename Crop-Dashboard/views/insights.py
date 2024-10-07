@@ -17,17 +17,6 @@ rfmodel_file_path = os.path.join(os.path.dirname(__file__), '../backend/RandomFo
 yield_model = joblib.load(bestmodel_file_path)
 scaler = joblib.load(scaler_file_path)
 
-unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
-                    'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 
-                    'Gram', 'Groundnut', 'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 
-                    'Masoor', 'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion', 
-                    'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)', 
-                    'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum', 
-                    'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato', 
-                    'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
-
-
-
 # --FUNCTIONS --
 # Load the model from the .pkl file
 with open(rfmodel_file_path, 'rb') as f:
@@ -227,6 +216,9 @@ def crop_recommendation_sys():
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
 
+#######################################################
+
+# YIELD PREDICTION
 unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
                     'Cotton(lint)', 'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 
                     'Gram', 'Groundnut', 'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 
@@ -235,6 +227,15 @@ unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Corian
                     'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum', 
                     'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato', 
                     'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+
+crop_selection = ['Banana', 'Barley', 'Castor seed', 'Coriander', 
+                    'Dry ginger', 'Garlic', 
+                    'Groundnut', 'Guar seed', 'Linseed', 'Maize', 
+                    'Moong(Green Gram)', 'Onion', 
+                    'Peas & beans (Pulses)', 
+                    'Potato', 'Rice', 'Sannhamp', 'Sesamum', 
+                    'Soyabean', 'Sugarcane', 'Sweet potato', 
+                    'Tobacco', 'Turmeric', 'Urad', 'Wheat']
 
 # Function to preprocess the data to include crop name columns
 def preprocess_data(df, crop_name, unique_crops):
@@ -246,15 +247,11 @@ def preprocess_data(df, crop_name, unique_crops):
     df[f'{crop_name}'] = 1
     return df 
 
-
-#######################################################
-
-# YIELD PREDICTION
 @st.dialog("Get Crop Yield Prediction")
 def crop_yield_prediction():
     st.title("Crop Yield Prediction System")
 
-    crop_name = st.selectbox("Select Crop", unique_crops)  # Let user select crop
+    crop_name = st.selectbox("Select Crop", crop_selection)  # Let user select crop
 
     st.caption("then")
 
@@ -264,6 +261,9 @@ def crop_yield_prediction():
             # Validate file size
             size_valid, file_size = is_valid_size(file)
             if size_valid:
+                status, msg = is_valid(file)
+                # Validate file content
+                if status == True:
                     file.seek(0)
                     uploaded_df = pd.read_csv(file)
                     uploaded_df = rename_columns(uploaded_df)
@@ -293,7 +293,10 @@ def crop_yield_prediction():
 
                     uploaded_df['Predicted_Yield'] = predictions
                     st.write(uploaded_df[['Temperature', 'Humidity', 'N', 'P', 'K', 'Predicted_Yield']])
-                    st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
+                    #st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
+                
+                else:
+                    st.error(msg)  # Should not accept
 
             elif size_valid is False:
                     st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
@@ -344,16 +347,6 @@ def crop_yield_prediction():
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
 
-# Function to preprocess the data to include crop name columns
-def preprocess_data(df, crop_name, unique_crops):
-    for crop in unique_crops:
-        if f'{crop}' not in df.columns:
-            df[f'{crop}'] = 0
-    
-    # Set the relevant crop column to 1
-    df[f'{crop_name}'] = 1
-    return df 
-
 # -- INSIGHTS PAGE --
 st.title("Crop Insights")
 st.write("Get insights on your soil data now using the following features")
@@ -375,7 +368,7 @@ with col2:
     st.image(image2_file_path)
     st.subheader("Crop Yield Predictor")
     st.divider()
-    st.write("Accurately forecast your crop yields with machine learning that leverages historical datasets. Optimize your planning and maximize productivity.")
+    st.write("Accurately forecast your crop yields with machine learning model that leverages historical India datasets. Optimize your planning and maximize productivity.")
     if st.button("Calculate Yield"):
         crop_yield_prediction()
 
