@@ -293,7 +293,7 @@ def crop_yield_prediction():
 
                     uploaded_df['Predicted_Yield'] = predictions
                     st.write(uploaded_df[['Temperature', 'Humidity', 'N', 'P', 'K', 'Predicted_Yield']])
-                    #st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
+                    st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
                 
                 else:
                     st.error(msg)  # Should not accept
