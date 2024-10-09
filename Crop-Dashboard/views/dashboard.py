@@ -6,6 +6,8 @@ import numpy as np
 import altair as alt
 import os
 
+anomaly = os.path.join(os.path.dirname(__file__), '../views/anomaly.py')
+
 css_file = os.path.join(os.path.dirname(__file__), '../style.css')
 with open(css_file) as f:
     st.markdown(f'<style>{f.read()}<style>', unsafe_allow_html=True)
@@ -419,7 +421,70 @@ if 'uploaded_df' in st.session_state:
         display_metrics(filtered_df, metric_placeholder)
         with r2cols[0]:
             display_timegraph(filtered_df, selected_feature)
-            st.code("descriptive stats", language="python")
+            z_thresholds = {
+                "Humi": 7,  # A larger threshold for humidity
+                "Temp": 7,  # Default threshold for temperature
+                "EC": 5,
+                "PH": 5,
+                "N": 6,
+                "P": 6,
+                "K":6
+            }
+
+             # Columns to analyze for anomalies
+            columns_to_check = ["Humidity", "Temperature", "EC", "PH", "N", "P", "K"]
+
+            # Create an empty list to store detected anomalies
+            anomalies = {'datetime': [], 'column': [], 'value': [], 'anomaly_type': []}
+
+            # Loop through each column and detect anomalies
+            for column in columns_to_check:
+                # Use the specific z_threshold for the column (fall back to a default if not specified)
+                z_threshold = z_thresholds.get(column, 3)
+
+                # Calculate the mean and standard deviation for the column
+                mean_value = df[column].mean()
+                std_dev = df[column].std()
+
+                # Calculate Z-scores for the column
+                z_scores = (df[column] - mean_value) / std_dev
+
+                # Detect outliers using Z-scores
+                outliers = abs(z_scores) > z_threshold
+
+                 # Detect sudden changes by comparing with previous and next values
+                diff_prev = df[column].diff()  # Difference with previous value
+                diff_next = df[column].shift(-1) - df[column]  # Difference with next value
+
+                # Detect where BOTH previous and next changes exceed the mean value
+                changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
+
+                # Combine outliers and sudden changes from both sides
+                anomaly_mask = outliers | changes_both
+
+                # Record the anomalies
+                for idx, is_anomaly in anomaly_mask.items():
+                    if is_anomaly:
+                        # Determine anomaly type
+                        if outliers[idx]:
+                            anomaly_type = f"{column} anomaly (outlier)"
+                        elif changes_both[idx]:
+                            if diff_prev[idx] > 0 and diff_next[idx] > 0:
+                                anomaly_type = f"{column} anomaly (increased from both previous and next)"
+                            elif diff_prev[idx] < 0 and diff_next[idx] < 0:
+                                anomaly_type = f"{column} anomaly (decreased from both previous and next)"
+                            else:
+                                anomaly_type = f"{column} anomaly (sudden change)"
+
+                        # Append anomaly details to the dictionary
+                        anomalies['datetime'].append(df['datetime'][idx])
+                        anomalies['column'].append(column)
+                        anomalies['value'].append(df[column][idx])
+                        anomalies['anomaly_type'].append(anomaly_type)
+
+            # Convert anomalies dictionary to a DataFrame
+            anomalies_df = pd.DataFrame(anomalies)
+            st.code(anomalies_df, language="python")
         st.write("")
 
 
