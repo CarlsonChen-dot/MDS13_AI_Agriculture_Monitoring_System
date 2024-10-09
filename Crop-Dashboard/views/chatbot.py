@@ -4,9 +4,6 @@ import pandas as pd
 import numpy as np
 import openai as openai
 
-
-# openai.api_key = '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'
-
 # List of specific columns user may request
 specific_columns = ["N", "P", "K", "Humidity", "Date", "Temperature", "EC", "PH", "Time"]
 
