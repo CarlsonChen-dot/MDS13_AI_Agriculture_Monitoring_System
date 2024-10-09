@@ -14,6 +14,7 @@ MAX_FILE_SIZE = 200 * 1024 * 1024
 bestmodel_file_path = os.path.join(os.path.dirname(__file__), '../backend/best_model.pkl')
 scaler_file_path = os.path.join(os.path.dirname(__file__), '../backend/scaler.pkl')
 rfmodel_file_path = os.path.join(os.path.dirname(__file__), '../backend/RandomForest.pkl')
+ideal_ranges_file_path = os.path.join(os.path.dirname(__file__), '../backend/ideal_ranges.csv')
 yield_model = joblib.load(bestmodel_file_path)
 scaler = joblib.load(scaler_file_path)
 
@@ -210,7 +211,7 @@ def crop_recommendation_sys():
      # !!! change output display
     if submit and valid_inputs:
         # Load the CSV file into a DataFrame
-        df = pd.read_csv('backend/ideal_ranges.csv')
+        df = pd.read_csv(ideal_ranges_file_path)
 
         # Processing only happens if the inputs are valid
         x = [[n, p, k, temp, humi, ph]]  # Input data for prediction
