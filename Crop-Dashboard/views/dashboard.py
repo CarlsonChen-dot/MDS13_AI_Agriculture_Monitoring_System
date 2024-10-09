@@ -422,8 +422,8 @@ if 'uploaded_df' in st.session_state:
         with r2cols[0]:
             display_timegraph(filtered_df, selected_feature)
             z_thresholds = {
-                "Humi": 7,  # A larger threshold for humidity
-                "Temp": 7,  # Default threshold for temperature
+                "Humidity": 4,  # A larger threshold for humidity
+                "Temperature": 4,  # Default threshold for temperature
                 "EC": 5,
                 "PH": 5,
                 "N": 6,
@@ -484,7 +484,10 @@ if 'uploaded_df' in st.session_state:
 
             # Convert anomalies dictionary to a DataFrame
             anomalies_df = pd.DataFrame(anomalies)
-            st.code(anomalies_df, language="python")
+            if anomalies_df.empty:
+                st.success("No anomalies were detected in the selected columns.")
+            else:
+                st.code(anomalies_df, language="python")
         st.write("")
 
 

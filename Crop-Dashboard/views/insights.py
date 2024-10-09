@@ -216,7 +216,7 @@ def crop_recommendation_sys():
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
 
-#######################################################
+###############################################################################################################
 
 # YIELD PREDICTION
 unique_crops = ['Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Castor seed', 'Coriander', 
@@ -267,6 +267,7 @@ def crop_yield_prediction():
                     file.seek(0)
                     uploaded_df = pd.read_csv(file)
                     uploaded_df = rename_columns(uploaded_df)
+
 
                     st.write("Processing uploaded dataset...")
 
@@ -347,6 +348,99 @@ def crop_yield_prediction():
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
 
+##########################################anomalies##############################################
+
+z_thresholds = {
+                "Humidity": 4,  # A larger threshold for humidity
+                "Temperature": 4,  # Default threshold for temperature
+                "EC": 5,
+                "PH": 5,
+                "N": 6,
+                "P": 6,
+                "K":6
+            }
+
+@st.dialog("Detect Anomalies")
+def detect_anomalies():
+    st.title("Crop Anomalies Detection System")
+
+    file = st.file_uploader("Upload dataset (CSV)", type=["csv"], accept_multiple_files=False)
+    if file is not None:
+         if st.button("Submit"):
+            # Validate file size
+            size_valid, file_size = is_valid_size(file)
+            if size_valid:
+                status, msg = is_valid(file)
+                # Validate file content
+                if status == True:
+                    file.seek(0)
+                    df = pd.read_csv(file)
+                    df = rename_columns(df)
+                    df = transform_data(df)
+
+                    st.write("Anomalies:")
+
+                    # Columns to analyze for anomalies
+                    columns_to_check = ["Humidity", "Temperature", "EC", "PH", "N", "P", "K"]
+
+                    # Create an empty list to store detected anomalies
+                    anomalies = {'datetime': [], 'column': [], 'value': [], 'anomaly_type': []}
+
+                    # Loop through each column and detect anomalies
+                    for column in columns_to_check:
+                        # Use the specific z_threshold for the column (fall back to a default if not specified)
+                        z_threshold = z_thresholds.get(column, 3)
+
+                        # Calculate the mean and standard deviation for the column
+                        mean_value = df[column].mean()
+                        std_dev = df[column].std()
+
+                        # Calculate Z-scores for the column
+                        z_scores = (df[column] - mean_value) / std_dev
+
+                        # Detect outliers using Z-scores
+                        outliers = abs(z_scores) > z_threshold
+
+                        # Detect sudden changes by comparing with previous and next values
+                        diff_prev = df[column].diff()  # Difference with previous value
+                        diff_next = df[column].shift(-1) - df[column]  # Difference with next value
+
+                        # Detect where BOTH previous and next changes exceed the mean value
+                        changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
+
+                        # Combine outliers and sudden changes from both sides
+                        anomaly_mask = outliers | changes_both
+
+                        # Record the anomalies
+                        for idx, is_anomaly in anomaly_mask.items():
+                            if is_anomaly:
+                                # Determine anomaly type
+                                if outliers[idx]:
+                                    anomaly_type = f"{column} anomaly (outlier)"
+                                elif changes_both[idx]:
+                                    if diff_prev[idx] > 0 and diff_next[idx] > 0:
+                                        anomaly_type = f"{column} anomaly (increased from both previous and next)"
+                                    elif diff_prev[idx] < 0 and diff_next[idx] < 0:
+                                        anomaly_type = f"{column} anomaly (decreased from both previous and next)"
+                                    else:
+                                        anomaly_type = f"{column} anomaly (sudden change)"
+
+                                # Append anomaly details to the dictionary
+                                anomalies['datetime'].append(df['datetime'][idx])
+                                anomalies['column'].append(column)
+                                anomalies['value'].append(df[column][idx])
+                                anomalies['anomaly_type'].append(anomaly_type)
+
+                    # Convert anomalies dictionary to a DataFrame
+                    anomalies_df = pd.DataFrame(anomalies)
+                    if anomalies_df.empty:
+                        st.success("No anomalies were detected.")
+                    else:
+                        st.code(anomalies_df, language = "python")
+
+
+
+
 # -- INSIGHTS PAGE --
 st.title("Crop Insights")
 st.write("Get insights on your soil data now using the following features")
@@ -374,7 +468,9 @@ with col2:
 
 with col3: 
     st.image(image3_file_path)
-    st.subheader("Smart Crop Chatbot?")
+    st.subheader("Anomalies Detection")
     st.divider()
-    st.write("Get instant answers to your crop-related questions and personalized farming advice. Powered by AI, this chatbot provides insights based on your specific needs.")
-    st.link_button(label="Chat Now", url="/chatbot") ## !! fix transistion cacat bozo
+    st.write("This function allows you to detect anomalies in environmental sensor data such as temperature, humidity, and more!")
+    # st.link_button(label="Detect Anomalies", url="/chatbot") ## !! fix transistion cacat bozo
+    if st.button("Detect Anomalies"):
+        detect_anomalies()

@@ -2,8 +2,10 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from scipy import stats
+import openai as openai
 
+
+openai.api_key = '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'
 
 # List of specific columns user may request
 specific_columns = ["N", "P", "K", "Humidity", "Date", "Temperature", "EC", "PH", "Time"]
@@ -42,7 +44,7 @@ if 'uploaded_df' in st.session_state:
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    
+
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -52,12 +54,17 @@ if 'uploaded_df' in st.session_state:
     if prompt := st.chat_input("What do you want to know about your dataset?"):
         # Display user message in chat message container
         st.chat_message("user").markdown(prompt)
-        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
 
-        # Generate response based on the prompt
+    #     # Generate response based on the prompt
+    #     response = get_openai_response(prompt)  # Get response from OpenAI API
+    #     st.chat_message("assistant").markdown(response)  # Display response in chat message container
+    #     # Add assistant response to chat history
         response = ""
-        
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Generate response based on the prompt
+
+
         if "summary" in prompt.lower() or "summarize" in prompt.lower() or "summarise" in prompt.lower():
             # Get the summary statistics, reset index so that "count", "mean", etc., appear as a column
             summary_stats = df.describe().reset_index()
@@ -72,7 +79,7 @@ if 'uploaded_df' in st.session_state:
                     if col in df.columns and col in prompt:
                         unique_values = df[col].unique()  # Get unique values
                         num_unique_values = df[col].nunique()  # Get number of unique values
-                        
+
                         # Append the unique values and their count for each specific column
                         response += f"\n'{col}': {num_unique_values} unique values : {', '.join(map(str, unique_values))}\n"
                     elif col not in df.columns:
@@ -90,7 +97,7 @@ if 'uploaded_df' in st.session_state:
                 for col in df.columns:
                     unique_values = df[col].unique()  # Get unique values
                     num_unique_values = df[col].nunique()  # Get number of unique values
-                    
+
                     # Append the information to the dictionary
                     unique_data["Column"].append(col)
                     unique_data["Number of Unique Values"].append(num_unique_values)
@@ -98,7 +105,7 @@ if 'uploaded_df' in st.session_state:
 
                 # Convert the dictionary to a DataFrame
                 unique_df = pd.DataFrame(unique_data)
-                
+
                 # Display the DataFrame as a table in markdown format
                 response = unique_df.to_markdown()
 
@@ -214,78 +221,148 @@ if 'uploaded_df' in st.session_state:
         elif "anomalies" in prompt.lower():
             # Create a DataFrame to hold anomalies data
             anomalies_data = []
+            anomalies = {'datetime': [], 'column': [], 'value': [], 'anomaly_type': []}
 
             # Check if a specific column is mentioned in the prompt
             specified_columns = []
-            for col in df.columns:
+            for col in specific_columns:
                 if col in prompt:
                     specified_columns.append(col)
 
             # If specific columns are specified, analyze only those columns
             if specified_columns:
-                for col in specified_columns:
-                    if pd.api.types.is_numeric_dtype(df[col]):
+                for column in specified_columns:
+                    if pd.api.types.is_numeric_dtype(df[column]):
                         # Check for specific Z-score threshold
-                        threshold = z_thresholds.get(col, 3.0)  # Default to 3.0 if not specified
+                        z_threshold = z_thresholds.get(column,3 )
+                        mean_value = df[column].mean()
+                        std_dev = df[column].std()
 
-                        # Calculate the Z-scores for the column
-                        z_scores = stats.zscore(df[col].dropna())  # Drop NaN values before calculating Z-scores
-                        
-                        # Identify anomalies: absolute Z-score greater than threshold
-                        anomalies_mask = abs(z_scores) > threshold
-                        anomalies_values = df[col].dropna()[anomalies_mask]  # Get the actual values that are anomalies
-                        
+
+                         # Calculate Z-scores
+                        z_scores = (df[column] - mean_value) / std_dev
+                        outliers = abs(z_scores) > z_threshold
+
+                        # Detect sudden changes using both previous and next values
+                        diff_prev = df[column].diff()
+                        diff_next = df[column].shift(-1) - df[column]
+                        changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
+
+                        anomaly_mask = outliers | changes_both
+
                         # Filter out consecutive values that are the same
                         previous_value = None
                         filtered_anomalies = []
-                        for idx in anomalies_values.index:
-                            value = anomalies_values[idx]
-                            if value != previous_value:  # Check if the current value is different from the previous one
-                                filtered_anomalies.append(value)
-                            previous_value = value
-                        
-                        num_anomalies = len(filtered_anomalies)
+                        for idx, is_anomaly in anomaly_mask.items():
+                            if is_anomaly:
+                                if outliers[idx]:
+                                    anomaly_type = f"{column} anomaly (outlier)"
+                                elif changes_both[idx]:
+                                    if diff_prev[idx] > 0 and diff_next[idx] > 0:
+                                        anomaly_type = f"{column} anomaly (increased from both previous and next)"
+                                    elif diff_prev[idx] < 0 and diff_next[idx] < 0:
+                                        anomaly_type = f"{column} anomaly (decreased from both previous and next)"
+                                    else:
+                                        anomaly_type = f"{column} anomaly (sudden change)"
 
-                        if num_anomalies > 0:
-                            response += f"\n'{col}': {num_anomalies} anomalies detected (threshold: {threshold}): {', '.join(map(str, filtered_anomalies))}\n"
-                            anomalies_data.append((col, filtered_anomalies))  # Store column and its anomalies
-                        else:
-                            response += f"\n'{col}': No anomalies detected (threshold: {threshold}).\n"
+                                anomalies['datetime'].append(df['datetime'][idx])
+                                anomalies['column'].append(column)
+                                anomalies['value'].append(df[column][idx])
+                                anomalies['anomaly_type'].append(anomaly_type)
+
+                    anomalies_data = pd.DataFrame(anomalies)
+
+                    # Step 5: Tabulate and return results as a string
+                    if anomalies_data.empty:
+                        response += f"No anomalies were detected."
                     else:
-                        response += f"\n'{col}': Non-numeric column, anomalies cannot be detected.\n"
+                        # Tabulate the anomalies DataFrame in a formal table format
+                        # Create a response string without headers
+                        response = "### Detected Anomalies:\n\n| Datetime           | Column | Value | Anomaly Type |\n|-------------------|--------|-------|--------------|\n"
+                        for i, row in anomalies_data.iterrows():
+                            response += f"| {row['datetime']} | {row['column']} | {row['value']} | {row['anomaly_type']} |\n"
 
             else:
-                # If no specific columns are specified, analyze all relevant columns
-                for col in df.columns:
-                    if pd.api.types.is_numeric_dtype(df[col]):
-                        # Check for specific Z-score threshold
-                        threshold = z_thresholds.get(col, 3.0)  # Default to 3.0 if not specified
+                # # If no specific columns are specified, analyze all relevant columns
+                # for col in df.columns:
+                #     if pd.api.types.is_numeric_dtype(df[col]):
+                #         # Check for specific Z-score threshold
+                #         threshold = z_thresholds.get(col, 3.0)  # Default to 3.0 if not specified
 
-                        # Calculate Z-scores for the column
-                        z_scores = stats.zscore(df[col].dropna())  # Drop NaN values before calculating Z-scores
-                        
-                        # Identify anomalies: absolute Z-score greater than threshold
-                        anomalies_mask = abs(z_scores) > threshold
-                        anomalies_values = df[col].dropna()[anomalies_mask]  # Get the actual values that are anomalies
-                        
-                        # Filter out consecutive values that are the same
-                        previous_value = None
-                        filtered_anomalies = []
-                        for idx in anomalies_values.index:
-                            value = anomalies_values[idx]
-                            if value != previous_value:  # Check if the current value is different from the previous one
-                                filtered_anomalies.append(value)
-                            previous_value = value
-                        
-                        num_anomalies = len(filtered_anomalies)
+                #         # Calculate Z-scores for the column
+                #         z_scores = stats.zscore(df[col].dropna())  # Drop NaN values before calculating Z-scores
 
-                        if num_anomalies > 0:
-                            response += f"\n'{col}': {num_anomalies} anomalies detected (threshold: {threshold}): {', '.join(map(str, filtered_anomalies))}\n"
-                            anomalies_data.append((col, filtered_anomalies))  # Store column and its anomalies
-                        else:
-                            response += f"\n'{col}': No anomalies detected (threshold: {threshold}).\n"
-                    else:
-                        response += f"\n'{col}': Non-numeric column, anomalies cannot be detected.\n"  
+                #         # Identify anomalies: absolute Z-score greater than threshold
+                #         anomalies_mask = abs(z_scores) > threshold
+                #         anomalies_values = df[col].dropna()[anomalies_mask]  # Get the actual values that are anomalies
+
+                #         # Filter out consecutive values that are the same
+                #         previous_value = None
+                #         filtered_anomalies = []
+                #         for idx in anomalies_values.index:
+                #             value = anomalies_values[idx]
+                #             if value != previous_value:  # Check if the current value is different from the previous one
+                #                 filtered_anomalies.append(value)
+                #             previous_value = value
+
+                #         num_anomalies = len(filtered_anomalies)
+
+                #         if num_anomalies > 0:
+                #             response += f"\n'{col}': {num_anomalies} anomalies detected: {', '.join(map(str, filtered_anomalies))}\n"
+                #             anomalies_data.append((col, filtered_anomalies))  # Store column and its anomalies
+                #         else:
+                #             response += f"\n'{col}': No anomalies detected.\n"
+                #     else:
+                #         response += f"\n'{col}': Non-numeric column, anomalies cannot be detected.\n"  
+
+                # Step 4: Anomaly detection process
+                columns_to_check = ["Humidity", "Temperature", "EC", "PH", "N", "P", "K"]
+                anomalies = {'datetime': [], 'column': [], 'value': [], 'anomaly_type': []}
+
+                for column in columns_to_check:
+                    z_threshold = z_thresholds.get(column,3 )
+                    mean_value = df[column].mean()
+                    std_dev = df[column].std()
+
+                    # Calculate Z-scores
+                    z_scores = (df[column] - mean_value) / std_dev
+                    outliers = abs(z_scores) > z_threshold
+
+                    # Detect sudden changes using both previous and next values
+                    diff_prev = df[column].diff()
+                    diff_next = df[column].shift(-1) - df[column]
+                    changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
+
+                    anomaly_mask = outliers | changes_both
+
+                    for idx, is_anomaly in anomaly_mask.items():
+                        if is_anomaly:
+                            if outliers[idx]:
+                                anomaly_type = f"{column} anomaly (outlier)"
+                            elif changes_both[idx]:
+                                if diff_prev[idx] > 0 and diff_next[idx] > 0:
+                                    anomaly_type = f"{column} anomaly (increased from both previous and next)"
+                                elif diff_prev[idx] < 0 and diff_next[idx] < 0:
+                                    anomaly_type = f"{column} anomaly (decreased from both previous and next)"
+                                else:
+                                    anomaly_type = f"{column} anomaly (sudden change)"
+
+                            anomalies['datetime'].append(df['datetime'][idx])
+                            anomalies['column'].append(column)
+                            anomalies['value'].append(df[column][idx])
+                            anomalies['anomaly_type'].append(anomaly_type)
+
+                anomalies_df = pd.DataFrame(anomalies)
+
+                 # Step 5: Tabulate and return results as a string
+                if anomalies_df.empty:
+                    response += f"No anomalies were detected."
+                else:
+                    # Tabulate the anomalies DataFrame in a formal table format
+                     # Create a response string without headers
+                    response = "### Detected Anomalies:\n\n| Datetime           | Column | Value | Anomaly Type |\n|-------------------|--------|-------|--------------|\n"
+                    for i, row in anomalies_df.iterrows():
+                        response += f"| {row['datetime']} | {row['column']} | {row['value']} | {row['anomaly_type']} |\n"
 
 
         elif "datatype" in prompt.lower():
@@ -298,13 +375,13 @@ if 'uploaded_df' in st.session_state:
             if specified_columns:
                 # Filter the datatypes to include only specified columns
                 datatypes = datatypes[specified_columns]
-                
+
                 # Create a DataFrame to format it nicely
                 datatype_df = pd.DataFrame({
                     "Column": datatypes.index,
                     "Data Type": datatypes.values
                 })
-                
+
                 # Convert the DataFrame to markdown format
                 response = datatype_df.to_markdown(index=False)
             else:
@@ -313,7 +390,7 @@ if 'uploaded_df' in st.session_state:
                     "Column": datatypes.index,
                     "Data Type": datatypes.values
                 })
-                
+
                 # Convert the DataFrame to markdown format
                 response = datatype_df.to_markdown(index=False)
 
@@ -329,11 +406,11 @@ if 'uploaded_df' in st.session_state:
                 total_columns = len(df.columns)
                 column_names = ', '.join(df.columns)  # Get the column names
                 response = f"The total number of columns in the dataset is: {total_columns}. The columns are: {column_names}."
- 
-        
-        elif "hello" in prompt.lower() or "hi" in prompt.lower():
+
+
+        elif "hello" in prompt.lower() or "hi" in prompt.lower() or "wassup" in prompt.lower():
             response = "Hello! How can I assist you today?"
-            
+
         elif "thank you" in prompt.lower():
             response = "You're welcome! If you have any other questions, feel free to ask."
 
@@ -342,14 +419,17 @@ if 'uploaded_df' in st.session_state:
 
         elif "temp" in  prompt.lower():
             response = "Do you mean Temperature?"
-        
+
         elif "ec" in prompt or "ph" in prompt or "n" in prompt or "k" in prompt or "p" in prompt or "temperature" in prompt or "humidity" in prompt:
             response = "I'm sorry please be more specific."
+
+        elif "bye" in prompt.lower():
+            response = "Goodbye!"
 
         else:
         # Handle unrecognized prompts
             response = "I'm sorry, I didn't understand that. Can you please rephrase your question or ask about something else? "
-            
+
         # Display assistant response
         with st.chat_message("assistant"):
             st.markdown(response)
