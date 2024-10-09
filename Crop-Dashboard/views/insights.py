@@ -124,7 +124,7 @@ def crop_recommendation_sys():
     if file is not None:
         # prediction="insert smtg bro" #!!read file get avg
         # st.success(prediction)
-        if st.button("Submit"):
+        if st.button("Submit", key= crop_recommendation_sys):
             # Validate file size
             size_valid, file_size = is_valid_size(file)
             if size_valid:
@@ -147,32 +147,32 @@ def crop_recommendation_sys():
             else:
                 st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
 
-     # !! check valid
-    if file is not None:
-        # prediction="insert smtg bro" #!!read file get avg
-        # st.success(prediction)
-        if st.button("Submit"):
-            # Validate file size
-            size_valid, file_size = is_valid_size(file)
-            if size_valid:
-                status, msg = is_valid(file)
-                # Validate file content
-                if status == True:
-                    file.seek(0)
-                    df = pd.read_csv(file)
-                    # Rename the columns
-                    df = rename_columns(df)
-                    df = transform_data(df)
+    #  # !! check valid
+    # if file is not None:
+    #     # prediction="insert smtg bro" #!!read file get avg
+    #     # st.success(prediction)
+    #     if st.button("Submit"):
+    #         # Validate file size
+    #         size_valid, file_size = is_valid_size(file)
+    #         if size_valid:
+    #             status, msg = is_valid(file)
+    #             # Validate file content
+    #             if status == True:
+    #                 file.seek(0)
+    #                 df = pd.read_csv(file)
+    #                 # Rename the columns
+    #                 df = rename_columns(df)
+    #                 df = transform_data(df)
 
-                    avg_values = calculate_averages(df)
-                    x = [avg_values]
-                    prediction = rec_model.predict(x)
-                    st.success(f"File sucessfully uploaded. Recommended Crop: {prediction[0]}")
+    #                 avg_values = calculate_averages(df)
+    #                 x = [avg_values]
+    #                 prediction = rec_model.predict(x)
+    #                 st.success(f"File sucessfully uploaded. Recommended Crop: {prediction[0]}")
 
-                else:
-                    st.error(msg)  # Should not accept
-            else:
-                st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
+    #             else:
+    #                 st.error(msg)  # Should not accept
+    #         else:
+    #             st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
 
     st.caption("or")
 
