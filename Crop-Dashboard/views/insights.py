@@ -189,12 +189,6 @@ def crop_recommendation_sys():
         temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
         humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
         ph = st.number_input('PH (3-9)', min_value=3.0, max_value=9.0, help="PH less than 3")
-        n = st.number_input('Nitrogen (mg/L)', min_value=0.0)
-        p = st.number_input('Phosphorus (mg/L)', min_value=0.0)
-        k = st.number_input('Potassium (mg/L)', min_value=0.0)
-        temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
-        humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
-        ph = st.number_input('PH (3-9)', min_value=3.0, max_value=9.0, help="PH less than 3")
         submit = st.form_submit_button('Submit Parameters')
 
     # Check if the inputs are valid only after clicking submit
