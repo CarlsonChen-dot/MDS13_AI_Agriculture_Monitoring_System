@@ -470,7 +470,7 @@ def detect_anomalies():
                     if anomalies_df.empty:
                         st.success("No anomalies were detected.")
                     else:
-                        st.code(anomalies_df, language = "python")
+                        st.write(anomalies_df)
 
 
 
