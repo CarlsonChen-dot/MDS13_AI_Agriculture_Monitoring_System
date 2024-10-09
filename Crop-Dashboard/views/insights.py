@@ -146,7 +146,38 @@ def crop_recommendation_sys():
             else:
                 st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
 
+     # !! check valid
+    if file is not None:
+        # prediction="insert smtg bro" #!!read file get avg
+        # st.success(prediction)
+        if st.button("Submit"):
+            # Validate file size
+            size_valid, file_size = is_valid_size(file)
+            if size_valid:
+                status, msg = is_valid(file)
+                # Validate file content
+                if status == True:
+                    file.seek(0)
+                    df = pd.read_csv(file)
+                    # Rename the columns
+                    df = rename_columns(df)
+                    df = transform_data(df)
+
+                    avg_values = calculate_averages(df)
+                    x = [avg_values]
+                    prediction = rec_model.predict(x)
+                    st.success(f"File sucessfully uploaded. Recommended Crop: {prediction[0]}")
+
+                else:
+                    st.error(msg)  # Should not accept
+            else:
+                st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
+
     st.caption("or")
+
+     # Flag to track if inputs are valid
+    valid_inputs = True
+
 
      # Flag to track if inputs are valid
     valid_inputs = True
@@ -158,7 +189,15 @@ def crop_recommendation_sys():
         temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
         humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
         ph = st.number_input('PH (3-9)', min_value=3.0, max_value=9.0, help="PH less than 3")
+        n = st.number_input('Nitrogen (mg/L)', min_value=0.0)
+        p = st.number_input('Phosphorus (mg/L)', min_value=0.0)
+        k = st.number_input('Potassium (mg/L)', min_value=0.0)
+        temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
+        humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
+        ph = st.number_input('PH (3-9)', min_value=3.0, max_value=9.0, help="PH less than 3")
         submit = st.form_submit_button('Submit Parameters')
+
+    # Check if the inputs are valid only after clicking submit
 
     # Check if the inputs are valid only after clicking submit
     if submit:
