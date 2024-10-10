@@ -475,7 +475,6 @@ with col3:
     st.image(image3_file_path)
     st.subheader("Anomalies Detection")
     st.divider()
-    st.write("This function allows you to detect anomalies in environmental sensor data such as temperature, humidity, and more!")
-    # st.link_button(label="Detect Anomalies", url="/chatbot") ## !! fix transistion cacat bozo
+    st.write("Identify unusual patterns in your environmental sensor data, this function allows you to detect anomalies within the data such as temperature, humidity, and more!")
     if st.button("Detect Anomalies"):
         detect_anomalies()

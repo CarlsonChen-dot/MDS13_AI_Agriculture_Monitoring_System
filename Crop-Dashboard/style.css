@@ -6,6 +6,7 @@
     margin-top: 2rem;
 }
 
+
 /* DASHBOARD PADDING */
 div.block-container.css-z5fcl4.egzxvld4 {
     width: 100%;
@@ -58,8 +59,6 @@ div.st-emotion-cache-1l269bu.e1f1d6gn3{
 div.st-emotion-cache-kilw7z.e1f1d6gn3{
     border-radius: 10px;
     padding: 0px 20px 10px 20px;
-    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
-    
     border: 1px groove #26282E
 }
 
@@ -67,7 +66,6 @@ div.st-emotion-cache-kilw7z.e1f1d6gn3{
 div.st-emotion-cache-el1bu4.e1f1d6gn3{
     border-radius: 10px;
     padding: 0px 25px 10px 25px;
-    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
     border: 1px groove #26282E;
 } 
 
@@ -77,6 +75,15 @@ div.st-emotion-cache-el1bu4.e1f1d6gn3{
     text-align: center;
     line-height: 1;
     padding-top: 40px;
+}
+
+.params_text2{
+    font-size: 17px; 
+    font-weight: 700;
+    text-align: center;
+    line-height: 1;
+    padding-top: 25px;
+    padding-bottom: 5px;
 }
 
 .donut_chart_title{
@@ -96,12 +103,14 @@ div.st-emotion-cache-el1bu4.e1f1d6gn3{
 }
 
 /* Data overview filter border */
-div.st-emotion-cache-tcjedx.e1f1d6gn3{
+div.st-emotion-cache-12w0qpk.e1f1d6gn3{
     border-radius: 10px;
     padding: 0px 20px 10px 20px;
-    /* box-shadow: 0  0.15rem 1.75rem 0  rgba(58,59,69,0.15); */
     border: 1px groove #26282E;
+    overflow: auto;
+    height: 52vh;
 }
+
 
 /* Adjust the size of the buttons */
 div.stButton > button {
@@ -109,4 +118,23 @@ div.stButton > button {
     height: 40px;  
 }
 
+/* Border for dashboard graph and chart */
+div.st-emotion-cache-1ae7a98.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 0px 20px 10px 20px;
+    border: 1px groove #26282E
+}
 
+
+div.st-emotion-cache-cp2mc7.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 0px 20px 10px 20px;
+    border: 1px groove #26282E
+}
+
+/* Border for filter data overview */
+div.st-emotion-cache-12w0qpk.e1f1d6gn3{
+    border-radius: 10px;
+    padding: 0px 20px 10px 20px;
+    border: 1px groove #26282E
+}

@@ -152,6 +152,9 @@ def display_timegraph(filtered_df, selected_feature):
         font=dict(
             color="#f6f6f6",  
             size=14  
+        ),
+        margin=dict(
+            b=50  # Bottom margin, set to 0 to remove space
         )
     )
     
@@ -177,15 +180,15 @@ def display_donut_chart(df):
                        'K': '#48CA95'}  # Green
 
     # Create the donut chart using Altair
-    chart = alt.Chart(npk_df).mark_arc(innerRadius=25).encode(
+    chart = alt.Chart(npk_df).mark_arc(innerRadius=35).encode(
         theta=alt.Theta(field="Value", type="quantitative"),
         color=alt.Color(field="Nutrient", type="nominal", scale=alt.Scale(domain=list(nutrient_colors.keys()), range=list(nutrient_colors.values()))),
         tooltip=[alt.Tooltip('Nutrient:N', title='Nutrient Type'), 
                  alt.Tooltip('Percentage:Q', title='Percentage (%)', format='.2f')]
         
     ).properties(
-        width=180,
-        height=180  
+        width=220,
+        height=220 
     ).configure_legend(
         orient='bottom',  
         labelFontSize=12, 
@@ -408,7 +411,7 @@ def display_boxplot(df, selected_feature):
 
 # -- DASHBOARD PAGE --
 st.markdown('<p class="dashboard_title">Soil Dashboard</p>', unsafe_allow_html = True)
-tab1, tab2, tab3 = st.tabs(["Analytics", "Data Overview", "Advanced Analytics"])
+tab1, tab2, tab3 = st.tabs(["Analytics", "Advanced Analytics", "Data Overview"])
 
 if 'uploaded_df' in st.session_state:
     df = st.session_state['uploaded_df']  # Get the uploaded DataFrame
@@ -416,12 +419,13 @@ if 'uploaded_df' in st.session_state:
     # -- ANALYTICS TAB --
     with tab1:
         metric_placeholder = st.empty()
-        r2cols = st.columns((4,1.3), gap= "medium")
+        r2cols = st.columns((4,1.3))
         with r2cols[1]:
             filtered_df, selected_feature = filter(df)
             st.divider()
             display_donut_chart(filtered_df)    
         display_metrics(filtered_df, metric_placeholder)
+        
         with r2cols[0]:
             display_timegraph(filtered_df, selected_feature)
             z_thresholds = {
@@ -446,18 +450,18 @@ if 'uploaded_df' in st.session_state:
                 z_threshold = z_thresholds.get(column, 3)
 
                 # Calculate the mean and standard deviation for the column
-                mean_value = df[column].mean()
-                std_dev = df[column].std()
+                mean_value = filtered_df[column].mean()
+                std_dev = filtered_df[column].std()
 
                 # Calculate Z-scores for the column
-                z_scores = (df[column] - mean_value) / std_dev
+                z_scores = (filtered_df[column] - mean_value) / std_dev
 
                 # Detect outliers using Z-scores
                 outliers = abs(z_scores) > z_threshold
 
                  # Detect sudden changes by comparing with previous and next values
-                diff_prev = df[column].diff()  # Difference with previous value
-                diff_next = df[column].shift(-1) - df[column]  # Difference with next value
+                diff_prev = filtered_df[column].diff()  # Difference with previous value
+                diff_next = filtered_df[column].shift(-1) - df[column]  # Difference with next value
 
                 # Detect where BOTH previous and next changes exceed the mean value
                 changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
@@ -480,285 +484,22 @@ if 'uploaded_df' in st.session_state:
                                 anomaly_type = f"{column} anomaly (sudden change)"
 
                         # Append anomaly details to the dictionary
-                        anomalies['datetime'].append(df['datetime'][idx])
+                        anomalies['datetime'].append(filtered_df['datetime'][idx])
                         anomalies['column'].append(column)
-                        anomalies['value'].append(df[column][idx])
+                        anomalies['value'].append(filtered_df[column][idx])
                         anomalies['anomaly_type'].append(anomaly_type)
 
             # Convert anomalies dictionary to a DataFrame
             anomalies_df = pd.DataFrame(anomalies)
             if anomalies_df.empty:
-                st.success("No anomalies were detected in the selected columns.")
+                st.success("Soil data all good! No anomalies were detected in the selected columns.")
             else:
-                st.error("Anomalies detected in the dataset. Please proceed to the Data Overview tab to review the anomalies")
-                #st.code(anomalies_df, language="python")
-        st.write("")
-
-
-    # -- DATA OVERVIEW TAB --
-    with tab2:
-        cols = st.columns((2, 1), gap="medium")
-
-        with cols[0].container():
-
-            # Placeholder for displaying the total number of records dynamically
-            records_placeholder = st.empty()
-            records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(st.session_state.get("df2_filtered", df))} 🌱</p>', unsafe_allow_html=True)
-            df_placeholder = st.empty()
-
-            # Use the filtered DataFrame in session_state if available, otherwise use the original df2
-            df2 = df.drop(columns=['datetime'])  # Different DataFrame for tab2
-            df2_filtered = st.session_state.get('df2_filtered', df2)  # Default to df2 if no filtered DataFrame is set
-            df_placeholder.dataframe(df2_filtered, use_container_width=True)
-
-            z_thresholds = {
-                "Humidity": 4,  # A larger threshold for humidity
-                "Temperature": 4,  # Default threshold for temperature
-                "EC": 5,
-                "PH": 5,
-                "N": 6,
-                "P": 6,
-                "K":6
-            }
-
-             # Columns to analyze for anomalies
-            columns_to_check = ["Humidity", "Temperature", "EC", "PH", "N", "P", "K"]
-
-            # Create an empty list to store detected anomalies
-            anomalies = {'datetime': [], 'column': [], 'value': [], 'anomaly_type': []}
-
-            # Loop through each column and detect anomalies
-            for column in columns_to_check:
-                # Use the specific z_threshold for the column (fall back to a default if not specified)
-                z_threshold = z_thresholds.get(column, 3)
-
-                # Calculate the mean and standard deviation for the column
-                mean_value = df[column].mean()
-                std_dev = df[column].std()
-
-                # Calculate Z-scores for the column
-                z_scores = (df[column] - mean_value) / std_dev
-
-                # Detect outliers using Z-scores
-                outliers = abs(z_scores) > z_threshold
-
-                 # Detect sudden changes by comparing with previous and next values
-                diff_prev = df[column].diff()  # Difference with previous value
-                diff_next = df[column].shift(-1) - df[column]  # Difference with next value
-
-                # Detect where BOTH previous and next changes exceed the mean value
-                changes_both = (abs(diff_prev) > mean_value) & (abs(diff_next) > mean_value)
-
-                # Combine outliers and sudden changes from both sides
-                anomaly_mask = outliers | changes_both
-
-                # Record the anomalies
-                for idx, is_anomaly in anomaly_mask.items():
-                    if is_anomaly:
-                        # Determine anomaly type
-                        if outliers[idx]:
-                            anomaly_type = f"{column} anomaly (outlier)"
-                        elif changes_both[idx]:
-                            if diff_prev[idx] > 0 and diff_next[idx] > 0:
-                                anomaly_type = f"{column} anomaly (increased from both previous and next)"
-                            elif diff_prev[idx] < 0 and diff_next[idx] < 0:
-                                anomaly_type = f"{column} anomaly (decreased from both previous and next)"
-                            else:
-                                anomaly_type = f"{column} anomaly (sudden change)"
-
-                        # Append anomaly details to the dictionary
-                        anomalies['datetime'].append(df['datetime'][idx])
-                        anomalies['column'].append(column)
-                        anomalies['value'].append(df[column][idx])
-                        anomalies['anomaly_type'].append(anomaly_type)
-
-            # Convert anomalies dictionary to a DataFrame
-            anomalies_df = pd.DataFrame(anomalies)
-            if anomalies_df.empty:
-                st.success("No anomalies were detected in the selected columns.")
-            else:
-                st.code(anomalies_df, language="python")
-
-        with cols[1]:
-            st.markdown(f'<p class="params_text">Parameter Filters</p>', unsafe_allow_html=True)
-            st.divider()
-
-            # If df2_filtered is not in session_state, initialize it with the original df2
-            if 'df2_filtered' not in st.session_state:
-                st.session_state.df2_filtered = df2.copy()  # Store the unfiltered DataFrame for tab2
-                st.session_state.df2_filtered_copy = df2.copy()  # Backup for reset
-
-            # Convert date and time to datetime format
-            df2['Date'] = pd.to_datetime(df2['Date'], format='%d/%m/%Y').dt.date
-            df2['Time'] = pd.to_datetime(df2['Time'], format='%H:%M:%S').dt.time
-            
-            date_range = st.date_input(
-                "Select a date range:",
-                min_value=df2['Date'].min(),
-                max_value=df2['Date'].max(),
-                value=(df2['Date'].min(), df2['Date'].max())
-            )
-            inner_cols = st.columns((2), gap="large")
-            with inner_cols[0]:
-
-                # Time filter
-                start_time, end_time = st.slider(
-                    "Select a time range:",
-                    value=(df2['Time'].min(), df2['Time'].max()),
-                    format="HH:mm:ss"
-                )
-
-                #Numeric filters
-                N_min, N_max = st.slider(
-                    "Nitrogen (N) Range",
-                    min_value=float(df2['N'].min()), 
-                    max_value=float(df2['N'].max()), 
-                    value=(float(df2['N'].min()), float(df2['N'].max()))
-                )
-
-                P_min, P_max = st.slider(
-                    "Phosphorus (P) Range",
-                    min_value=float(df2['P'].min()), 
-                    max_value=float(df2['P'].max()), 
-                    value=(float(df2['P'].min()), float(df2['P'].max()))
-                )
-
-                K_min, K_max = st.slider(
-                    "Potassium (K) Range",
-                    min_value=float(df2['K'].min()), 
-                    max_value=float(df2['K'].max()), 
-                    value=(float(df2['K'].min()), float(df2['K'].max()))
-                )
-            
-            with inner_cols[1]:
-                Temp_min, Temp_max = st.slider(
-                    "Temperature Range",
-                    min_value=float(df2['Temperature'].min()), 
-                    max_value=float(df2['Temperature'].max()), 
-                    value=(float(df2['Temperature'].min()), float(df2['Temperature'].max()))
-                )
-
-                Humi_min, Humi_max = st.slider(
-                    "Humidity Range",
-                    min_value=float(df2['Humidity'].min()), 
-                    max_value=float(df2['Humidity'].max()), 
-                    value=(float(df2['Humidity'].min()), float(df2['Humidity'].max()))
-                )
-
-                EC_min, EC_max = st.slider(
-                    "EC Range",
-                    min_value=float(df2['EC'].min()), 
-                    max_value=float(df2['EC'].max()), 
-                    value=(float(df2['EC'].min()), float(df2['EC'].max()))
-                )
-
-                PH_min, PH_max = st.slider(
-                    "pH level Range",
-                    min_value=float(df2['PH'].min()), 
-                    max_value=float(df2['PH'].max()), 
-                    value=(float(df2['PH'].min()), float(df2['PH'].max()))
-                )
-
-            inner_cols2 = st.columns((2), gap="small")
-            with inner_cols2[0]:
-                # Filtering only happens when the button is pressed
-                if st.button("Submit Filter"):
-                    # Apply all filters when the button is pressed
-                    df2_filtered = df2[
-                        (df2['Date'] >= date_range[0]) & (df2['Date'] <= date_range[1]) &
-                        (df2['Time'] >= start_time) & (df2['Time'] <= end_time) &
-                        (df2['N'] >= N_min) & (df2['N'] <= N_max) &
-                        (df2['P'] >= P_min) & (df2['P'] <= P_max) &
-                        (df2['K'] >= K_min) & (df2['K'] <= K_max) &
-                        (df2['Temperature'] >= Temp_min) & (df2['Temperature'] <= Temp_max) &
-                        (df2['Humidity'] >= Humi_min) & (df2['Humidity'] <= Humi_max) &
-                        (df2['EC'] >= EC_min) & (df2['EC'] <= EC_max) &
-                        (df2['PH'] >= PH_min) & (df2['PH'] <= PH_max)
-                    ]
-                    st.session_state.df2_filtered = df2_filtered.copy()  # Update the filtered DataFrame for tab2
-                    df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the filtered DataFrame
-                    records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>', unsafe_allow_html=True)
-
-            with inner_cols2[1]:
-                # Add a Reset button to reset the DataFrame to its original state
-                if st.button("Reset Filter"):
-                    st.session_state.df2_filtered = st.session_state.df2_filtered_copy.copy()  # Reset to the original DataFrame
-                    df2_filtered = st.session_state.df2_filtered  # Update the filtered DataFrame for tab2
-                    df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the original DataFrame
-                    records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>', unsafe_allow_html=True)
-
-
-
-            # # Capture slider inputs but don't apply filtering immediately
-            # # Date filter
-            # date_range = st.date_input(
-            #     "Select a date range:",
-            #     min_value=df2['Date'].min(),
-            #     max_value=df2['Date'].max(),
-            #     value=(df2['Date'].min(), df2['Date'].max())
-            # )
-
-            # # Time filter
-            # start_time, end_time = st.slider(
-            #     "Select a time range:",
-            #     value=(df2['Time'].min(), df2['Time'].max()),
-            #     format="HH:mm:ss"
-            # )
-
-            # #Numeric filters
-            # N_min, N_max = st.slider(
-            #     "Nitrogen (N) Range",
-            #     min_value=float(df2['N'].min()), 
-            #     max_value=float(df2['N'].max()), 
-            #     value=(float(df2['N'].min()), float(df2['N'].max()))
-            # )
-
-            # P_min, P_max = st.slider(
-            #     "Phosphorus (P) Range",
-            #     min_value=float(df2['P'].min()), 
-            #     max_value=float(df2['P'].max()), 
-            #     value=(float(df2['P'].min()), float(df2['P'].max()))
-            # )
-
-            # K_min, K_max = st.slider(
-            #     "Potassium (K) Range",
-            #     min_value=float(df2['K'].min()), 
-            #     max_value=float(df2['K'].max()), 
-            #     value=(float(df2['K'].min()), float(df2['K'].max()))
-            # )
-
-            # Temp_min, Temp_max = st.slider(
-            #     "Temperature Range",
-            #     min_value=float(df2['Temperature'].min()), 
-            #     max_value=float(df2['Temperature'].max()), 
-            #     value=(float(df2['Temperature'].min()), float(df2['Temperature'].max()))
-            # )
-
-            # Humi_min, Humi_max = st.slider(
-            #     "Humidity Range",
-            #     min_value=float(df2['Humidity'].min()), 
-            #     max_value=float(df2['Humidity'].max()), 
-            #     value=(float(df2['Humidity'].min()), float(df2['Humidity'].max()))
-            # )
-
-            # EC_min, EC_max = st.slider(
-            #     "Electrical Conductivity Range",
-            #     min_value=float(df2['EC'].min()), 
-            #     max_value=float(df2['EC'].max()), 
-            #     value=(float(df2['EC'].min()), float(df2['EC'].max()))
-            # )
-
-            # PH_min, PH_max = st.slider(
-            #     "pH level Range",
-            #     min_value=float(df2['PH'].min()), 
-            #     max_value=float(df2['PH'].max()), 
-            #     value=(float(df2['PH'].min()), float(df2['PH'].max()))
-            # )
-
+                st.error("Anomalies detected in soil data")
+                st.dataframe(anomalies_df, use_container_width=True)
 
     # -- ADVANCED ANALYTICS TAB --
-    with tab3:
-        st.caption("Analytics based on selected dataset:")
+    with tab2:
+        st.caption("Analytics based on selected parameter:")
         st.success(selected_feature)
         cols = st.columns(2, gap="medium")
         with cols[0]:
@@ -789,5 +530,132 @@ if 'uploaded_df' in st.session_state:
             st.plotly_chart(fig, use_container_width=True)
 
         display_scatterplot(filtered_df, selected_feature)
+
+    # -- DATA OVERVIEW TAB --
+    with tab3:
+        
+        records_placeholder = st.empty()
+        records_placeholder.markdown(f'<p class="records_text">Total number of soil records:<p class="records">{len(st.session_state.get("df2_filtered", df))} 🌱</p>', unsafe_allow_html=True)
+        cols = st.columns((3, 1))
+        
+        with cols[0].container():
+            
+            # Placeholder for displaying the total number of records dynamically
+            df_placeholder = st.empty()
+
+            # Use the filtered DataFrame in session_state if available, otherwise use the original df2
+            df2 = df.drop(columns=['datetime'])  # Different DataFrame for tab2
+            df2_filtered = st.session_state.get('df2_filtered', df2)  # Default to df2 if no filtered DataFrame is set
+            df_placeholder.dataframe(df2_filtered, use_container_width=True)
+
+        with cols[1]:
+            st.markdown(f'<p class="params_text2">Parameter Filters</p>', unsafe_allow_html=True)
+
+            # If df2_filtered is not in session_state, initialize it with the original df2
+            if 'df2_filtered' not in st.session_state:
+                st.session_state.df2_filtered = df2.copy()  # Store the unfiltered DataFrame for tab2
+                st.session_state.df2_filtered_copy = df2.copy()  # Backup for reset
+
+            # Convert date and time to datetime format
+            df2['Date'] = pd.to_datetime(df2['Date'], format='%d/%m/%Y').dt.date
+            df2['Time'] = pd.to_datetime(df2['Time'], format='%H:%M:%S').dt.time
+
+            # Date range filter
+            date_range = st.date_input(
+                "Select a date range:",
+                min_value=df2['Date'].min(),
+                max_value=df2['Date'].max(),
+                value=(df2['Date'].min(), df2['Date'].max())
+            )
+
+            # Time range filter
+            start_time, end_time = st.slider(
+                "Select a time range:",
+                value=(df2['Time'].min(), df2['Time'].max()),
+                format="HH:mm:ss"
+            )
+
+            # Numeric filters for various parameters
+            N_min, N_max = st.slider(
+                "Nitrogen (N) Range",
+                min_value=float(df2['N'].min()), 
+                max_value=float(df2['N'].max()), 
+                value=(float(df2['N'].min()), float(df2['N'].max()))
+            )
+
+            P_min, P_max = st.slider(
+                "Phosphorus (P) Range",
+                min_value=float(df2['P'].min()), 
+                max_value=float(df2['P'].max()), 
+                value=(float(df2['P'].min()), float(df2['P'].max()))
+            )
+
+            K_min, K_max = st.slider(
+                "Potassium (K) Range",
+                min_value=float(df2['K'].min()), 
+                max_value=float(df2['K'].max()), 
+                value=(float(df2['K'].min()), float(df2['K'].max()))
+            )
+
+            Temp_min, Temp_max = st.slider(
+                "Temperature Range",
+                min_value=float(df2['Temperature'].min()), 
+                max_value=float(df2['Temperature'].max()), 
+                value=(float(df2['Temperature'].min()), float(df2['Temperature'].max()))
+            )
+
+            Humi_min, Humi_max = st.slider(
+                "Humidity Range",
+                min_value=float(df2['Humidity'].min()), 
+                max_value=float(df2['Humidity'].max()), 
+                value=(float(df2['Humidity'].min()), float(df2['Humidity'].max()))
+            )
+
+            EC_min, EC_max = st.slider(
+                "EC Range",
+                min_value=float(df2['EC'].min()), 
+                max_value=float(df2['EC'].max()), 
+                value=(float(df2['EC'].min()), float(df2['EC'].max()))
+            )
+
+            PH_min, PH_max = st.slider(
+                "pH level Range",
+                min_value=float(df2['PH'].min()), 
+                max_value=float(df2['PH'].max()), 
+                value=(float(df2['PH'].min()), float(df2['PH'].max()))
+            )
+
+        btn = st.columns((4,1),gap="medium")
+        with btn[1]:
+            if st.button("Submit Filter"):
+                # Apply all filters when the button is pressed
+                df2_filtered = df2[
+                    (df2['Date'] >= date_range[0]) & (df2['Date'] <= date_range[1]) &
+                    (df2['Time'] >= start_time) & (df2['Time'] <= end_time) &
+                    (df2['N'] >= N_min) & (df2['N'] <= N_max) &
+                    (df2['P'] >= P_min) & (df2['P'] <= P_max) &
+                    (df2['K'] >= K_min) & (df2['K'] <= K_max) &
+                    (df2['Temperature'] >= Temp_min) & (df2['Temperature'] <= Temp_max) &
+                    (df2['Humidity'] >= Humi_min) & (df2['Humidity'] <= Humi_max) &
+                    (df2['EC'] >= EC_min) & (df2['EC'] <= EC_max) &
+                    (df2['PH'] >= PH_min) & (df2['PH'] <= PH_max)
+                ]
+                st.session_state.df2_filtered = df2_filtered.copy()  # Update the filtered DataFrame for tab2
+                df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the filtered DataFrame
+                records_placeholder.markdown(
+                    f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>',
+                    unsafe_allow_html=True
+                )
+            
+            # Reset button to restore the DataFrame to its original state
+            if st.button("Reset Filter"):
+                st.session_state.df2_filtered = st.session_state.df2_filtered_copy.copy()  # Reset to the original DataFrame
+                df2_filtered = st.session_state.df2_filtered  # Update the filtered DataFrame for tab2
+                df_placeholder.dataframe(df2_filtered, use_container_width=True)  # Display the original DataFrame
+                records_placeholder.markdown(
+                    f'<p class="records_text">Total number of soil records:<p class="records">{len(df2_filtered)} 🌱</p>',
+                    unsafe_allow_html=True
+                )
+                
 else:
     st.write("Please upload a CSV file in the Home page to proceed.")
