@@ -116,6 +116,41 @@ def transform_data(df):
     df['datetime'] = pd.to_datetime(df['datetime'], format='%d/%m/%Y %H:%M:%S')
     return df
 
+def success_message(values):
+        # Load the CSV file into a DataFrame
+        df = pd.read_csv(ideal_ranges_file_path)
+
+        # Processing only happens if the inputs are valid
+        x = [values]  # Input data for prediction
+        prediction = rec_model.predict(x)
+        prediction = prediction[0]
+
+        # Extracting the ideal ranges for the recommended crop
+        df = df[df['label']==prediction]
+        n_range = f"{df['N'].iloc[0]} mg/L"
+        p_range = f"{df['P'].iloc[0]} mg/L"
+        k_range = f"{df['K'].iloc[0]} mg/L"
+        temp_range = f"{df['temperature'].iloc[0]}°C"
+        humi_range = f"{df['humidity'].iloc[0]}%"
+        ph_range = f"{df['ph'].iloc[0]}"
+
+        # Displaying the information in Streamlit with markdown
+        st.write("Crop Recommendation:")
+        st.success(
+            f"""
+            ### {prediction.capitalize()}
+            
+            This crop ideally grows in the following environmental ranges:
+            - **Nitrogen (N)**: {n_range}
+            - **Phosphorus (P)**: {p_range}
+            - **Potassium (K)**: {k_range}
+            - **Temperature**: {temp_range}
+            - **Humidity**: {humi_range}
+            - **Soil pH**: {ph_range}
+
+            Maintaining these conditions ensures healthy crops with optimal yield!
+            """
+        )
 # Crop recommendation system form
 @st.dialog("Get Crop Recommendation")
 def crop_recommendation_sys():
@@ -123,7 +158,6 @@ def crop_recommendation_sys():
 
     # Check if file is valid
     if file is not None:
-        # prediction="insert smtg bro" #!!read file get avg
         # st.success(prediction)
         if st.button("Submit", key= crop_recommendation_sys):
             # Validate file size
@@ -141,7 +175,7 @@ def crop_recommendation_sys():
                     avg_values = calculate_averages(df)
                     x = [avg_values]
                     prediction = rec_model.predict(x)
-                    st.success(f"File sucessfully uploaded. Recommended Crop: {prediction[0]}")
+                    success_message(avg_values)
 
                 else:
                     st.error(msg)  # Should not accept
@@ -210,22 +244,23 @@ def crop_recommendation_sys():
         ph_range = f"{df['ph'].iloc[0]}"
 
         # Displaying the information in Streamlit with markdown
-        st.write("Crop Recommendation:")
-        st.success(
-            f"""
-            ### {prediction.capitalize()}
+        success_message([n, p, k, temp, humi, ph])
+        # st.write("Crop Recommendation:")
+        # st.success(
+        #     f"""
+        #     ### {prediction.capitalize()}
             
-            This crop ideally grows in the following environmental ranges:
-            - **Nitrogen (N)**: {n_range}
-            - **Phosphorus (P)**: {p_range}
-            - **Potassium (K)**: {k_range}
-            - **Temperature**: {temp_range}
-            - **Humidity**: {humi_range}
-            - **Soil pH**: {ph_range}
+        #     This crop ideally grows in the following environmental ranges:
+        #     - **Nitrogen (N)**: {n_range}
+        #     - **Phosphorus (P)**: {p_range}
+        #     - **Potassium (K)**: {k_range}
+        #     - **Temperature**: {temp_range}
+        #     - **Humidity**: {humi_range}
+        #     - **Soil pH**: {ph_range}
 
-            Maintaining these conditions ensures healthy crops with optimal yield!
-            """
-        )
+        #     Maintaining these conditions ensures healthy crops with optimal yield!
+        #     """
+        # )
 
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
@@ -465,11 +500,6 @@ def detect_anomalies():
 
             elif size_valid is False:
                 st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
-
-
-
-
-
 
 # -- INSIGHTS PAGE --
 st.title("Crop Insights")
