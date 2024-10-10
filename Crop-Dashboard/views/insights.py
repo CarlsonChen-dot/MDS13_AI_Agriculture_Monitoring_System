@@ -23,9 +23,6 @@ scaler = joblib.load(scaler_file_path)
 with open(rfmodel_file_path, 'rb') as f:
     rec_model = pickle.load(f)
 
-
-
-
 def is_valid(file):
     # Open the file and check the headers
     file.seek(0)  # Reset the file pointer after upload
@@ -56,6 +53,9 @@ def is_valid(file):
     # Read the rest of the file as a DataFrame
     file.seek(0)  # Reset the file pointer to the beginning again
     df = pd.read_csv(file)
+
+    if df.empty or len(df) < 2:
+        return False, "Insufficient data"
 
     # Validate column data types
     actual_dtypes = df.dtypes.to_dict()
@@ -161,26 +161,35 @@ def crop_recommendation_sys():
         n = st.number_input('Nitrogen (mg/L)', min_value=0.0)
         p = st.number_input('Phosphorus (mg/L)', min_value=0.0)
         k = st.number_input('Potassium (mg/L)', min_value=0.0)
-        temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
+        temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=50.0, help="Temperature must be between 1°C -  50°C")
         humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
-        ph = st.number_input('PH (3-9)', min_value=3.0, max_value=9.0, help="PH less than 3")
+        ph = st.number_input('PH (3-9)', min_value=0.0, max_value=13.0, help="PH must be between 3-9")
         submit = st.form_submit_button('Submit Parameters')
 
-    # Check if the inputs are valid only after clicking submit
 
     # Check if the inputs are valid only after clicking submit
-    if submit:
-        valid_inputs = True  # Flag to track the validity of inputs
         
-        if temp <= 0:
-            st.warning("Temperature must be greater than 0°C.")
+    if submit:
+        valid_inputs = True
+
+        if ph <3 or ph>9:
+            st.warning("PH must be between 3-9.")
+            valid_inputs = False
+            
+        if temp <= 0 or temp >50 :
+            st.warning("Temperature must be between 1°C -  50°C.")
             valid_inputs = False
         if humi <= 0:
             st.warning("Humidity must be greater than 0%.")
             valid_inputs = False
-        if ph <= 0:
-            st.warning("PH must be greater than 0.")
+
+        if n<0:
             valid_inputs = False
+        if p<0:
+            valid_inputs = False
+        if k<0:
+            valid_inputs = False
+ 
 
     if submit and valid_inputs:
         # Load the CSV file into a DataFrame
@@ -326,6 +335,14 @@ def crop_yield_prediction():
         if humi <= 0:
             st.warning("Humidity must be greater than 0%.")
             valid_inputs = False
+        if n<0:
+            valid_inputs = False
+        if p<0:
+            valid_inputs = False
+        if k<0:
+            valid_inputs = False
+        
+            
 
     if submit and valid_inputs:
         input_data = pd.DataFrame([[temp, humi, n, p, k]], columns=['Temperature', 'Humidity', 'N', 'P', 'K'])
@@ -442,6 +459,14 @@ def detect_anomalies():
                         st.success("No anomalies were detected.")
                     else:
                         st.write(anomalies_df)
+
+                else:
+                    st.error(msg)
+
+            elif size_valid is False:
+                st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
+
+
 
 
 

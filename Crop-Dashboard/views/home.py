@@ -38,6 +38,9 @@ def is_valid(file):
     file.seek(0)  # Reset the file pointer to the beginning again
     df = pd.read_csv(file)
 
+    if df.empty or len(df) < 2:
+        return False, "Insufficient data"
+
     # Validate column data types
     actual_dtypes = df.dtypes.to_dict()
 
