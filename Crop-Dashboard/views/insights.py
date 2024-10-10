@@ -23,9 +23,6 @@ scaler = joblib.load(scaler_file_path)
 with open(rfmodel_file_path, 'rb') as f:
     rec_model = pickle.load(f)
 
-
-
-
 def is_valid(file):
     # Open the file and check the headers
     file.seek(0)  # Reset the file pointer after upload
@@ -56,6 +53,9 @@ def is_valid(file):
     # Read the rest of the file as a DataFrame
     file.seek(0)  # Reset the file pointer to the beginning again
     df = pd.read_csv(file)
+
+    if df.empty or len(df) < 2:
+        return False, "Insufficient data"
 
     # Validate column data types
     actual_dtypes = df.dtypes.to_dict()
@@ -471,6 +471,14 @@ def detect_anomalies():
                         st.success("No anomalies were detected.")
                     else:
                         st.write(anomalies_df)
+
+                else:
+                    st.error(msg)
+
+            elif size_valid is False:
+                st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
+
+
 
 
 
