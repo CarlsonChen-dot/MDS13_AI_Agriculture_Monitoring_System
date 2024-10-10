@@ -30,22 +30,16 @@ pg = st.navigation(pages=[home_page, dashboard_page, insights_page, chatbot_page
 # -- SHARED ON ALL PAGES --
 logo_url = "https://i.imgur.com/NYTwH3h.png"
 st.logo(logo_url)
-#st.sidebar.text("Made by MDS13/nChen Kai Xuan 32712960/nChua Qiu Xia 33207089/nRichelle Yong 33203547\nMonash University")
 
-st.sidebar.text("""
-Made by MDS13 (MONASH UNIVERSITY)
-Chen Kai Xuan 32712960
+st.sidebar.text("""Made by MDS13
+@ Monash University Malaysia""")
+
+# """)
+names_code = """Chen Kai Xuan 32712960
 Chua Qiu Xia 33207089
-Richelle Yong 33203547
+Richelle Yong 33203547"""
 
-""")
-
-
-# Adding names with center alignment in the sidebar
-# st.sidebar.markdown(
-#     "<p class='centered-text'>Made by MDS13<br>Chen Kai Xuan 32712960<br>Chua Qiu Xia 33207089<br>Richelle Yong 33203547<br>Monash University</p>",
-#     unsafe_allow_html=True
-# )
-
+st.sidebar.code(names_code, language="python")
 pg.run()
+
 

@@ -120,7 +120,8 @@ def transform_data(df):
 @st.dialog("Get Crop Recommendation")
 def crop_recommendation_sys():
     file = st.file_uploader("Upload dataset", type=["csv"], accept_multiple_files=False)
-     # !! check valid
+
+    # Check if file is valid
     if file is not None:
         # prediction="insert smtg bro" #!!read file get avg
         # st.success(prediction)
@@ -146,33 +147,6 @@ def crop_recommendation_sys():
                     st.error(msg)  # Should not accept
             else:
                 st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
-
-    #  # !! check valid
-    # if file is not None:
-    #     # prediction="insert smtg bro" #!!read file get avg
-    #     # st.success(prediction)
-    #     if st.button("Submit"):
-    #         # Validate file size
-    #         size_valid, file_size = is_valid_size(file)
-    #         if size_valid:
-    #             status, msg = is_valid(file)
-    #             # Validate file content
-    #             if status == True:
-    #                 file.seek(0)
-    #                 df = pd.read_csv(file)
-    #                 # Rename the columns
-    #                 df = rename_columns(df)
-    #                 df = transform_data(df)
-
-    #                 avg_values = calculate_averages(df)
-    #                 x = [avg_values]
-    #                 prediction = rec_model.predict(x)
-    #                 st.success(f"File sucessfully uploaded. Recommended Crop: {prediction[0]}")
-
-    #             else:
-    #                 st.error(msg)  # Should not accept
-    #         else:
-    #             st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
 
     st.caption("or")
 
@@ -208,7 +182,6 @@ def crop_recommendation_sys():
             st.warning("PH must be greater than 0.")
             valid_inputs = False
 
-     # !!! change output display
     if submit and valid_inputs:
         # Load the CSV file into a DataFrame
         df = pd.read_csv(ideal_ranges_file_path)
@@ -244,8 +217,6 @@ def crop_recommendation_sys():
             Maintaining these conditions ensures healthy crops with optimal yield!
             """
         )
-
-
 
     elif submit and not valid_inputs:
         st.error("Please fix the input values before submitting.")
