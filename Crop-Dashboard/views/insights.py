@@ -298,91 +298,129 @@ def preprocess_data(df, crop_name, unique_crops):
 
 @st.dialog("Get Crop Yield Prediction")
 def crop_yield_prediction():
+    """
+    Crop Yield Prediction System: This function allows the user to predict the crop yield
+    based on specific parameters (temperature, humidity, nitrogen, phosphorus, potassium)
+    or by uploading a CSV dataset. The function performs preprocessing, validates inputs,
+    and generates crop yield predictions using a pre-trained machine learning model.
+    
+    The prediction results are displayed in the Streamlit interface.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
+    
+    # Display the title of the application
     st.title("Crop Yield Prediction System")
 
+    # User selects a crop from the available crop names in crop_selection
     crop_name = st.selectbox("Select Crop", crop_selection)  # Let user select crop
 
+    # Information for the user to upload a dataset
     st.caption("then")
 
+    # Allows the user to upload a CSV file
     file = st.file_uploader("Upload dataset (CSV)", type=["csv"], accept_multiple_files=False)
-    if file is not None:
-         if st.button("Submit"):
-            # Validate file size
+    
+    if file is not None:  # If the user uploads a file
+        if st.button("Submit"):  # The user clicks the submit button to process the file
+            # Validate the file size to ensure it doesn't exceed the limit
             size_valid, file_size = is_valid_size(file)
-            if size_valid:
+            
+            if size_valid:  # If the file size is within the limit
+                # Validate the file content to ensure it has the necessary columns
                 status, msg = is_valid(file)
-                # Validate file content
-                if status == True:
-                    file.seek(0)
-                    uploaded_df = pd.read_csv(file)
+                
+                if status == True:  # If the file content is valid
+                    file.seek(0)  # Reset file pointer to the start
+                    uploaded_df = pd.read_csv(file)  # Read the CSV file into a DataFrame
+                    
+                    # Rename the columns to ensure consistency
                     uploaded_df = rename_columns(uploaded_df)
 
-
+                    # Inform the user that the dataset is being processed
                     st.write("Processing uploaded dataset...")
 
-                    # Preprocess the data
+                    # Preprocess the data based on the selected crop and ensure that the relevant crop features are included
                     uploaded_df = preprocess_data(uploaded_df, crop_name, unique_crops)
 
+                    # Define the order of the features expected by the model
                     features_order = ['Temperature', 'Humidity', 'N', 'P', 'K', 'Arhar/Tur', 'Bajra',
-                                    'Banana', 'Barley', 'Castor seed', 'Coriander', 'Cotton(lint)',
-                                    'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 'Gram', 'Groundnut',
-                                    'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 'Masoor',
-                                    'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion',
-                                    'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)',
-                                    'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum',
-                                    'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato',
-                                    'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
-
+                                      'Banana', 'Barley', 'Castor seed', 'Coriander', 'Cotton(lint)',
+                                      'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 'Gram', 'Groundnut',
+                                      'Guar seed', 'Jowar', 'Jute', 'Linseed', 'Maize', 'Masoor',
+                                      'Moong(Green Gram)', 'Moth', 'Oilseeds total', 'Onion',
+                                      'Other  Rabi pulses', 'Other Kharif pulses', 'Peas & beans (Pulses)',
+                                      'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum',
+                                      'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato',
+                                      'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+                    
+                    # Reorder the columns to match the model's feature expectations
                     uploaded_df = uploaded_df[features_order]
 
-                    # Scale the data
+                    # Scale the data using the pre-trained scaler
                     uploaded_df_scaled = scaler.transform(uploaded_df)
 
-                    # Make the prediction
+                    # Use the trained yield model to predict the crop yield based on the scaled data
                     predictions = yield_model.predict(uploaded_df_scaled)
 
+                    # Add the predictions as a new column in the DataFrame
                     uploaded_df['Predicted_Yield'] = predictions
+
+                    # Display the relevant columns including the predicted yield
                     st.write(uploaded_df[['Temperature', 'Humidity', 'N', 'P', 'K', 'Predicted_Yield']])
+
+                    # Display the first predicted yield result to the user in a success message
                     st.success(f"Predicted Yield: {predictions[0]:.2f} kg/ha")
                 
-                else:
-                    st.error(msg)  # Should not accept
+                else:  # If the file content is invalid, show an error message
+                    st.error(msg)
 
-            elif size_valid is False:
-                    st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
+            elif size_valid is False:  # If the file size exceeds the limit
+                st.error(f"File size exceeded 200MB. Current size: {file_size / (1024 * 1024):.2f} MB.")
 
+    # Alternatively, users can input the parameters manually
     st.caption("or")
+    
+    # Create a form to capture manual inputs for crop prediction parameters
     with st.form("rec_form"):
+        # Input fields for Nitrogen, Phosphorus, Potassium, Temperature, and Humidity
         n = st.number_input('Nitrogen (mg/L)', min_value=0.0)
         p = st.number_input('Phosphorus (mg/L)', min_value=0.0)
         k = st.number_input('Potassium (mg/L)', min_value=0.0)
         temp = st.number_input('Temperature (°C)', min_value=0.0, max_value=100.0, help="Temperature cannot be 0°C")
         humi = st.number_input('Humidity (%)', min_value=0.0, max_value=100.0, help="Humidity cannot be 0%")
+
+        # Submit button to trigger the form
         submit = st.form_submit_button('Submit Parameters')
 
-    # Check if the inputs are valid only after clicking submit
+    # Check if the form is submitted and validate the inputs
     if submit:
-        valid_inputs = True  # Flag to track the validity of inputs
+        valid_inputs = True  # Initialize the valid input flag
         
+        # Ensure that the input values are within acceptable ranges
         if temp <= 0:
             st.warning("Temperature must be greater than 0°C.")
             valid_inputs = False
         if humi <= 0:
             st.warning("Humidity must be greater than 0%.")
             valid_inputs = False
-        if n<0:
+        if n < 0 or p < 0 or k < 0:
+            st.warning("N, P, and K values cannot be negative.")
             valid_inputs = False
-        if p<0:
-            valid_inputs = False
-        if k<0:
-            valid_inputs = False
-        
-            
 
+    # If inputs are valid, process the manual input data
     if submit and valid_inputs:
+        # Create a DataFrame from the input values
         input_data = pd.DataFrame([[temp, humi, n, p, k]], columns=['Temperature', 'Humidity', 'N', 'P', 'K'])
+        
+        # Preprocess the input data to ensure compatibility with the model
         input_data = preprocess_data(input_data, crop_name, unique_crops)
 
+        # Reorder the input data columns to match the model's feature order
         features_order = ['Temperature', 'Humidity', 'N', 'P', 'K', 'Arhar/Tur', 'Bajra',
                           'Banana', 'Barley', 'Castor seed', 'Coriander', 'Cotton(lint)',
                           'Dry chillies', 'Dry ginger', 'Garlic', 'Ginger', 'Gram', 'Groundnut',
@@ -392,18 +430,22 @@ def crop_yield_prediction():
                           'Potato', 'Ragi', 'Rapeseed &Mustard', 'Rice', 'Sannhamp', 'Sesamum',
                           'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower', 'Sweet potato',
                           'Tobacco', 'Total foodgrain', 'Turmeric', 'Urad', 'Wheat']
+        
         input_data = input_data[features_order]
 
-        # Scale the data
+        # Scale the input data
         input_data_scaled = scaler.transform(input_data)
 
-        # Make the prediction
+        # Use the trained model to predict the crop yield based on the input data
         prediction = yield_model.predict(input_data_scaled)
 
+        # Display the predicted yield
         st.success(f"Predicted Yield: {prediction[0]:.2f} kg/ha")
-        
+    
     elif submit and not valid_inputs:
+        # If inputs are invalid, display an error message
         st.error("Please fix the input values before submitting.")
+
 
 ##########################################anomalies##############################################
 
