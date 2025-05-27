@@ -34,9 +34,13 @@ Traditional farming methods often result in inefficient resource utilization and
 * Analysis of sensor data and deployment of predictive models.
 
 ## Project Supervisor
-* Dr.Adamu Muhammad Buhari - (email)
+* Dr.Adamu Muhammad Buhari
 
 ## References
-* link
-* link
-* link
+* World Agriculture: Towards 2015/2030: An FAO Perspective and Summary Report; FAO: Rome,
+Italy, 2002; Available online: www.fao.org/3/a-y4252e.pdf (accessed on 3 March 2024).
+* Roser, M.; Ritchie, H.; Ortiz-Ospina, E. World Population Growth. 2013. Available online:
+https://ourworldindata.org/world-population-growth (accessed on 3 March 2024).
+* Hernández-Ochoa, I.M.; Gaiser, T.; Kersebaum, K.C.; Webber, H.; Seidel, S.J.; Grahmann, K.;
+Ewert, F. Model-based design of crop diversification through new field arrangements in spatially
+heterogeneous landscapes. A review. Agron. Sustain. Dev. 2022, 42, 74.
